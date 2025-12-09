@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#fbcfe8">
+    <title>お風呂チェッカー</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel (JSX変換用) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background-color: #ffe4e6;
+            overscroll-behavior-y: none; /* バウンス防止 */
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .purupuru { animation: purupuru 2s infinite; }
+        @keyframes purupuru {
+            0% { transform: scale(1, 1); }
+            10% { transform: scale(1.1, 0.9); }
+            40% { transform: scale(0.9, 1.1); }
+            50% { transform: scale(1, 1); }
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+        }
+
+        /* スクロールバー非表示 */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- アイコンコンポーネント (SVG直接定義) ---
+        const Icon = ({ path, className, size = 24 }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {path}
+            </svg>
+        );
+
+        const Icons = {
+            Sparkles: (props) => <Icon {...props} path={<><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M5 19v2"/><path d="M9 19H5"/></>} />,
+            Bath: (props) => <Icon {...props} path={<><path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-1-1.5C3.81 2 2.5 3.31 2.5 5.5c0 1.56 1.15 2.1 1.8 2.2"/><path d="M21 10c0-1.66-1.34-3-3-3-1.12 0-2.1.58-2.6 1.5L14 10"/><path d="M7 10h14L19.5 21h-11Z"/><path d="M7 10v4"/></>} />,
+            Clock: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} />
+        };
+
+        // --- 設定定数 ---
+        const BASE_RATE_PER_HOUR = 2.5; 
+
+        const TIME_MESSAGES = [
+            { hour: 0, msg: "お風呂上がり最高〜✨ 今が一番可愛い！" },
+            { hour: 3, msg: "まだ余裕！シャンプーのいい匂いする♡" },
+            { hour: 6, msg: "前髪キープできてる？ちょっと確認してみて👀" },
+            { hour: 9, msg: "そろそろ皮脂が出てきたかも…あぶらとり紙使う？" },
+            { hour: 12, msg: "ねえ、頭皮の匂い大丈夫そ？正直心配💦" },
+            { hour: 15, msg: "ベタついてきた…。ドライシャンプーしたいレベル🥺" },
+            { hour: 18, msg: "正直、隣にいるとキツイかも😱 香水で誤魔化せないよ！" },
+            { hour: 21, msg: "お肌の水分量ゼロ！砂漠状態🐫 入ってお願い！" },
+            { hour: 24, msg: "限界突破。シンプルに汚いよ😭 誰とも会わないで！" },
+            { hour: 30, msg: "菌の温床になってるよ🦠 今すぐお風呂行って！" }
+        ];
+
+        const EVENT_DAMAGES = {
+            sleep: { label: "寝て起きた", damage: 15, emoji: "🛌", msg: "起きたら髪ボサボサ〜💦 寝汗かいた！" },
+            train: { label: "満員電車", damage: 15, emoji: "🚃", msg: "密着やばすぎ…蒸れてる気がする💧" },
+            outing: { label: "ちょっと外出", damage: 10, emoji: "👜", msg: "外の空気汚すぎ…ホコリついたかも🤧" },
+            rain: { label: "雨・湿気", damage: 10, emoji: "☔", msg: "湿気で髪終わった…うねりMAX😭" },
+            exercise: { label: "体育・運動", damage: 40, emoji: "🏃‍♀️", msg: "汗やばい！これは即シャワー案件🚿" },
+            live: { label: "ライブ・推し活", damage: 35, emoji: "🎤", msg: "汗だくで完全燃焼🔥 楽しかったけど体ベタベタ！" },
+            food: { label: "焼肉/揚げ物", damage: 20, emoji: "🥩", msg: "匂いついちゃった…ファブリーズじゃ無理😭" },
+            ramen: { label: "ラーメン", damage: 20, emoji: "🍜", msg: "ニンニク背脂…美味しいけど髪に匂いが😱" },
+            allnight: { label: "徹夜・オール", damage: 25, emoji: "🌙", msg: "肌荒れ確定演出。化粧ノリ最悪になりそう💀" },
+            mask: { label: "ずっとマスク", damage: 5, emoji: "😷", msg: "口周りが蒸れてる…肌荒れ注意報🚨" }
+        };
+
+        // ストレージキー
+        const STORAGE_KEY_HP = 'hq_hp';
+        const STORAGE_KEY_LAST_BATH = 'hq_last_bath';
+        const STORAGE_KEY_DAMAGE = 'hq_damage';
+        const STORAGE_KEY_LOGS = 'hq_logs';
+
+        const App = () => {
+            // --- State ---
+            const [hp, setHp] = useState(100);
+            const [lastBathTime, setLastBathTime] = useState(new Date());
+            const [eventDamageTotal, setEventDamageTotal] = useState(0);
+            const [logs, setLogs] = useState([]);
+            const [currentTime, setCurrentTime] = useState(new Date());
+            const [currentMsg, setCurrentMsg] = useState("");
+            const [quickAction, setQuickAction] = useState(null);
+            
+            // 自動更新制御用
+            const [lastAppliedTimeMsg, setLastAppliedTimeMsg] = useState("");
+            // 最後にユーザーアクション（イベント/入浴）を行った時間
+            const [lastActionTime, setLastActionTime] = useState(new Date(0));
+
+            // --- Effects ---
+            useEffect(() => {
+                const loadData = () => {
+                    try {
+                        const savedHp = localStorage.getItem(STORAGE_KEY_HP);
+                        const savedLastBath = localStorage.getItem(STORAGE_KEY_LAST_BATH);
+                        const savedDamage = localStorage.getItem(STORAGE_KEY_DAMAGE);
+                        const savedLogs = localStorage.getItem(STORAGE_KEY_LOGS);
+
+                        if (savedHp) setHp(parseFloat(savedHp));
+                        if (savedLastBath) setLastBathTime(new Date(savedLastBath));
+                        if (savedDamage) setEventDamageTotal(parseFloat(savedDamage));
+                        if (savedLogs) setLogs(JSON.parse(savedLogs));
+                    } catch (e) {
+                        console.error("Failed to load data", e);
+                    }
+                };
+                loadData();
+                
+                const params = new URLSearchParams(window.location.search);
+                const action = params.get('action');
+                if (action) {
+                    if (action === 'bath') {
+                        setTimeout(() => setQuickAction({ type: 'bath' }), 500);
+                    } else if (EVENT_DAMAGES[action]) {
+                        setTimeout(() => setQuickAction({ type: 'event', key: action }), 500);
+                    }
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            }, []);
+
+            useEffect(() => {
+                localStorage.setItem(STORAGE_KEY_HP, hp.toString());
+                localStorage.setItem(STORAGE_KEY_LAST_BATH, lastBathTime.toISOString());
+                localStorage.setItem(STORAGE_KEY_DAMAGE, eventDamageTotal.toString());
+                localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(logs));
+            }, [hp, lastBathTime, eventDamageTotal, logs]);
+
+            useEffect(() => {
+                const timer = setInterval(() => {
+                    setCurrentTime(new Date());
+                }, 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            // ステータス計算 & メッセージ更新ロジック
+            useEffect(() => {
+                const diffMs = new Date() - lastBathTime;
+                const hoursElapsed = (diffMs / (1000 * 60 * 60));
+                
+                const baseDamage = hoursElapsed * BASE_RATE_PER_HOUR;
+                const totalDamage = baseDamage + eventDamageTotal;
+
+                let currentHp = 100 - totalDamage;
+                currentHp = Math.max(0, Math.min(100, currentHp));
+                setHp(currentHp);
+
+                // アクション直後（8秒間）は時間経過によるメッセージ上書きをブロック
+                if (new Date() - lastActionTime < 8000) return;
+
+                const roundedHour = Math.floor(hoursElapsed);
+                const msgObj = TIME_MESSAGES.slice().reverse().find(m => roundedHour >= m.hour);
+
+                if (msgObj && msgObj.msg !== lastAppliedTimeMsg) {
+                    setCurrentMsg(msgObj.msg);
+                    setLastAppliedTimeMsg(msgObj.msg);
+                }
+            }, [currentTime, lastBathTime, eventDamageTotal, lastAppliedTimeMsg, lastActionTime]);
+            
+            useEffect(() => {
+                if (quickAction) {
+                    if (quickAction.type === 'bath') handleBath();
+                    else if (quickAction.type === 'event') handleEvent(quickAction.key);
+                    setQuickAction(null);
+                }
+            }, [quickAction]);
+
+            // --- Actions ---
+            const handleEvent = (eventKey) => {
+                const event = EVENT_DAMAGES[eventKey];
+                setEventDamageTotal(prev => prev + event.damage);
+                addLog(event.msg, event.emoji);
+                setCurrentMsg(event.msg);
+                setLastActionTime(new Date()); // アクション時刻更新
+                if (navigator.vibrate) navigator.vibrate(50);
+            };
+
+            const handleBath = () => {
+                setLastBathTime(new Date());
+                setEventDamageTotal(0);
+                setHp(100);
+                addLog("お風呂入って復活！今日も私が一番カワイイ💖", "🛁");
+                setCurrentMsg("お風呂上がり最高〜✨ 今が一番可愛い！");
+                setLastAppliedTimeMsg("お風呂上がり最高〜✨ 今が一番可愛い！");
+                setLastActionTime(new Date()); // アクション時刻更新
+                if (navigator.vibrate) navigator.vibrate([0, 100, 50, 100]);
+            };
+
+            const addLog = (text, icon) => {
+                const now = new Date();
+                const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                setLogs(prev => {
+                    const newLogs = [{ time: timeStr, text: text, icon: icon || "📱" }, ...prev];
+                    return newLogs.slice(0, 50);
+                });
+            };
+
+            const getStatusDesign = (currentHp) => {
+                if (currentHp >= 80) return { 
+                    avatar: "👸", label: "優勝", 
+                    textColor: 'text-pink-600', bgColor: 'bg-pink-50',
+                    barColor: 'bg-gradient-to-r from-pink-300 to-pink-500'
+                };
+                if (currentHp >= 50) return { 
+                    avatar: "😐", label: "ビミョー", 
+                    textColor: 'text-yellow-600', bgColor: 'bg-yellow-50',
+                    barColor: 'bg-gradient-to-r from-yellow-300 to-yellow-500'
+                };
+                if (currentHp >= 20) return { 
+                    avatar: "😰", label: "萎え", 
+                    textColor: 'text-orange-600', bgColor: 'bg-orange-50',
+                    barColor: 'bg-gradient-to-r from-orange-300 to-orange-500'
+                };
+                return { 
+                    avatar: "🧟‍♀️", label: "終了", 
+                    textColor: 'text-purple-600', bgColor: 'bg-purple-50',
+                    barColor: 'bg-gradient-to-r from-gray-700 to-purple-800'
+                };
+            };
+
+            const status = getStatusDesign(hp);
+            const hoursSinceBath = ((new Date() - lastBathTime) / (1000 * 60 * 60)).toFixed(1);
+
+            return (
+                <div className={`min-h-screen w-full flex flex-col items-center py-6 px-4 ${status.bgColor} transition-colors duration-500 font-sans pb-safe`}>
+                    
+                    {/* Header */}
+                    <header className="w-full text-center mb-6">
+                        <div className="inline-block bg-white px-6 py-2 rounded-full border-2 border-pink-200 shadow-sm">
+                            <h1 className="text-xl font-black text-pink-500 tracking-wider flex items-center gap-2 justify-center">
+                                <Icons.Sparkles size={20} /> お風呂チェッカー <Icons.Sparkles size={20} />
+                            </h1>
+                        </div>
+                    </header>
+
+                    {/* Main Card */}
+                    <div className="w-full max-w-sm glass-card rounded-3xl p-6 mb-6 text-center relative overflow-hidden transition-all duration-300">
+                        <div className="absolute top-4 right-4 rotate-12 bg-white px-3 py-1 rounded-lg border-2 border-gray-800 font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10">
+                            {status.label}
+                        </div>
+                        <div className="text-8xl mb-4 mt-4 purupuru filter drop-shadow-xl select-none">
+                            {status.avatar}
+                        </div>
+                        <div className="relative pt-1 mb-2">
+                            <div className="flex mb-2 items-center justify-between">
+                                <span className="text-xs font-bold inline-block py-1 px-2 uppercase rounded-full text-pink-600 bg-pink-100">盛れ度</span>
+                                <span className="text-xs font-bold inline-block text-pink-600">{Math.floor(hp)}%</span>
+                            </div>
+                            <div className="overflow-hidden h-4 mb-4 text-xs flex rounded-full bg-white border-2 border-pink-100">
+                                <div style={{ width: `${hp}%` }} className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center transition-all duration-500 ${status.barColor}`}></div>
+                            </div>
+                        </div>
+                        <div className="relative bg-white rounded-xl p-4 border-2 border-gray-100 shadow-sm mt-2">
+                            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white border-t-2 border-l-2 border-gray-100 rotate-45"></div>
+                            <p className="font-bold text-gray-700 leading-relaxed text-sm">
+                                {currentMsg || "計算中..."}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Timestamp */}
+                    <div className="bg-white/60 px-5 py-2 rounded-full mb-6 text-sm font-bold text-gray-600 border border-white flex items-center gap-2">
+                        <Icons.Clock size={16} className="text-pink-400" /> 
+                        お風呂から <span className="text-xl text-pink-500 font-black">{hoursSinceBath}</span> 時間経過
+                    </div>
+
+                    {/* Buttons Grid */}
+                    <div className="w-full max-w-sm mb-6">
+                        <div className="text-xs font-bold text-gray-400 mb-2 pl-2">▼ 何かあった？ (タップで追加)</div>
+                        <div className="grid grid-cols-2 gap-3">
+                            {Object.keys(EVENT_DAMAGES).map(key => (
+                                <button key={key} onClick={() => handleEvent(key)} className="bg-white hover:bg-pink-50 border-2 border-pink-100 text-gray-700 py-3 px-3 rounded-2xl shadow-sm active:scale-95 transition-transform flex items-center gap-3 text-left w-full">
+                                    <span className="text-2xl min-w-[30px] text-center select-none">{EVENT_DAMAGES[key].emoji}</span>
+                                    <span className="text-xs font-bold leading-tight flex-1">{EVENT_DAMAGES[key].label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Reset Button */}
+                    <button onClick={handleBath} className="w-full max-w-sm bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500 text-white font-black py-4 rounded-full shadow-lg border-4 border-white active:scale-95 transition-all mb-8 flex items-center justify-center gap-2 text-lg">
+                        <Icons.Bath size={24} />
+                        <span>お風呂入ってリセット✨</span>
+                    </button>
+
+                    {/* Logs */}
+                    <div className="w-full max-w-sm bg-white/50 rounded-2xl p-4 h-48 overflow-y-auto border border-white scrollbar-hide">
+                        <h3 className="text-xs font-bold text-gray-400 mb-3 pl-1 sticky top-0 bg-transparent">HISTORY</h3>
+                        <div className="space-y-3">
+                            {logs.map((log, index) => (
+                                <div key={index} className="flex gap-3 animate-fade-in-up">
+                                    <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0 text-lg border border-pink-200 select-none">{log.icon}</div>
+                                    <div className="bg-white p-2 rounded-r-xl rounded-bl-xl text-xs shadow-sm border border-gray-100 flex-1">
+                                        <div className="text-gray-400 text-[10px] mb-0.5">{log.time}</div>
+                                        {log.text}
+                                    </div>
+                                </div>
+                            ))}
+                            {logs.length === 0 && <p className="text-xs text-gray-400 text-center py-4">まだ履歴はないよ！</p>}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
