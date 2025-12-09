@@ -12,7 +12,6 @@
     <meta property="og:title" content="お風呂チェッカー">
     <meta property="og:description" content="現在のお風呂に入っていない時間を計測中... あなたの清潔度は？">
     <meta property="og:type" content="website">
-    <!-- ↓もし画像が出ない場合は、ここの icon.png を https://あなたのID.github.io/リポジトリ名/icon.png に書き換えてください -->
     <meta property="og:image" content="icon.png">
     <meta name="twitter:card" content="summary">
     
@@ -41,7 +40,6 @@
             -webkit-tap-highlight-color: transparent;
         }
         
-        /* セーフエリア対応 */
         .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
         .pt-safe { padding-top: env(safe-area-inset-top); }
 
@@ -82,7 +80,6 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // --- アイコンコンポーネント ---
         const Icon = ({ path, className, size = 24, onClick }) => (
             <svg onClick={onClick} xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 {path}
@@ -360,9 +357,14 @@
             const handleShare = async () => {
                 const hoursSinceBath = ((new Date() - lastBathTime) / (1000 * 60 * 60)).toFixed(1);
                 const status = getStatusDesign(hp);
-                const shareUrl = window.location.href;
                 
-                // ここでシェア文言を生成しています
+                // URLにLINE用の魔法の言葉(?openExternalBrowser=1)をつける
+                let shareUrl = window.location.href;
+                const separator = shareUrl.includes('?') ? '&' : '?';
+                if (!shareUrl.includes('openExternalBrowser=1')) {
+                    shareUrl = `${shareUrl}${separator}openExternalBrowser=1`;
+                }
+                
                 const text = `【お風呂チェッカー】\n現在、お風呂に入らず${hoursSinceBath}時間経過…\n盛れ度${Math.floor(hp)}% (${status.label})\n\n「${status.shareMsg}」\n\n#お風呂チェッカー\n${shareUrl}`;
 
                 if (navigator.share) {
