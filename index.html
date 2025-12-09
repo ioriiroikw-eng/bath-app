@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#fbcfe8">
@@ -21,9 +21,9 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
 
-    <!-- アイコン設定 -->
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2972/2972108.png">
-    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2972/2972108.png">
+    <!-- アイコン設定 (あなたのicon.pngを使います) -->
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" href="icon.png">
 
     <style>
         body {
@@ -33,6 +33,10 @@
             -webkit-tap-highlight-color: transparent;
         }
         
+        /* セーフエリア対応 */
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        .pt-safe { padding-top: env(safe-area-inset-top); }
+
         .purupuru { animation: purupuru 2s infinite; }
         @keyframes purupuru {
             0% { transform: scale(1, 1); }
@@ -317,35 +321,29 @@
                 if (navigator.vibrate) navigator.vibrate([0, 100, 50, 100]);
             };
 
-            // シェア機能 (強化版)
+            // シェア機能
             const handleShare = async () => {
                 const hoursSinceBath = ((new Date() - lastBathTime) / (1000 * 60 * 60)).toFixed(1);
                 const status = getStatusDesign(hp);
                 const shareUrl = window.location.href;
                 const text = `【お風呂チェッカー】\n現在、お風呂に入らず${hoursSinceBath}時間経過…\n清潔度${Math.floor(hp)}% (${status.label})で社会的に死にかけです😇\n\n#お風呂チェッカー\n${shareUrl}`;
 
-                // 1. スマホのネイティブ共有を試す
                 if (navigator.share) {
                     try {
                         await navigator.share({
                             title: 'お風呂チェッカー',
                             text: text,
                         });
-                        return; // 成功したらここで終了
+                        return;
                     } catch (err) {
-                        // ユーザーがキャンセルした場合は何もしない
                         if (err.name === 'AbortError') return;
                     }
                 }
 
-                // 2. PCなどでネイティブ共有が使えない、またはエラーになった場合
-                // クリップボードへのコピーを試みる
                 try {
                     await navigator.clipboard.writeText(text);
                     alert('文章をコピーしました！SNSに貼り付けてね📋\n\n' + text);
                 } catch (err) {
-                    // 3. クリップボードもダメな場合 (一部のブラウザやiframe内)
-                    // 強制的にTwitter投稿画面を開くか、プロンプトを表示
                     const isYes = confirm('文章のコピーに失敗しました💦\n代わりにTwitter(X)の投稿画面を開きますか？');
                     if (isYes) {
                         window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
@@ -391,25 +389,25 @@
             return (
                 <div className={`min-h-screen w-full flex flex-col items-center py-6 px-4 ${status.bgColor} transition-colors duration-500 font-sans pb-safe relative`}>
                     
-                    <div className="absolute top-4 left-4 z-20">
+                    {/* Header (Flex Layout) */}
+                    <div className="w-full flex justify-between items-center pt-safe mb-6 mt-2 relative z-20">
+                        {/* カレンダーボタン */}
                         <button onClick={() => setIsCalendarOpen(true)} className="bg-white/80 p-3 rounded-full shadow-md text-pink-500 hover:scale-110 transition-transform">
                             <Icons.Calendar size={24} />
                         </button>
-                    </div>
-                    
-                    <div className="absolute top-4 right-4 z-20">
+
+                        {/* タイトル */}
+                        <div className="inline-block bg-white px-4 py-2 rounded-full border-2 border-pink-200 shadow-sm mx-2">
+                            <h1 className="text-lg font-black text-pink-500 tracking-wider flex items-center gap-2 justify-center whitespace-nowrap">
+                                <Icons.Sparkles size={18} /> お風呂チェッカー <Icons.Sparkles size={18} />
+                            </h1>
+                        </div>
+
+                        {/* シェアボタン */}
                         <button onClick={handleShare} className="bg-white/80 p-3 rounded-full shadow-md text-blue-500 hover:scale-110 transition-transform">
                             <Icons.Share size={24} />
                         </button>
                     </div>
-
-                    <header className="w-full text-center mb-6 mt-2">
-                        <div className="inline-block bg-white px-6 py-2 rounded-full border-2 border-pink-200 shadow-sm">
-                            <h1 className="text-xl font-black text-pink-500 tracking-wider flex items-center gap-2 justify-center">
-                                <Icons.Sparkles size={20} /> お風呂チェッカー <Icons.Sparkles size={20} />
-                            </h1>
-                        </div>
-                    </header>
 
                     <div className="w-full max-w-sm glass-card rounded-3xl p-6 mb-6 text-center relative overflow-hidden transition-all duration-300">
                         <div className="absolute top-4 right-4 rotate-12 bg-white px-3 py-1 rounded-lg border-2 border-gray-800 font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10">
