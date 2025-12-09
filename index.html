@@ -8,6 +8,14 @@
     <meta name="theme-color" content="#fbcfe8">
     <title>お風呂チェッカー</title>
     
+    <!-- SNSシェア用設定 (OGP) -->
+    <meta property="og:title" content="お風呂チェッカー">
+    <meta property="og:description" content="現在のお風呂に入っていない時間を計測中... あなたの清潔度は？">
+    <meta property="og:type" content="website">
+    <!-- ↓もし画像が出ない場合は、ここの icon.png を https://あなたのID.github.io/リポジトリ名/icon.png に書き換えてください -->
+    <meta property="og:image" content="icon.png">
+    <meta name="twitter:card" content="summary">
+    
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -21,7 +29,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
 
-    <!-- アイコン設定 (あなたのicon.pngを使います) -->
+    <!-- アイコン設定 -->
     <link rel="apple-touch-icon" href="icon.png">
     <link rel="icon" href="icon.png">
 
@@ -354,6 +362,7 @@
                 const status = getStatusDesign(hp);
                 const shareUrl = window.location.href;
                 
+                // ここでシェア文言を生成しています
                 const text = `【お風呂チェッカー】\n現在、お風呂に入らず${hoursSinceBath}時間経過…\n盛れ度${Math.floor(hp)}% (${status.label})\n\n「${status.shareMsg}」\n\n#お風呂チェッカー\n${shareUrl}`;
 
                 if (navigator.share) {
