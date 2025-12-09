@@ -321,12 +321,40 @@
                 if (navigator.vibrate) navigator.vibrate([0, 100, 50, 100]);
             };
 
+            const getStatusDesign = (currentHp) => {
+                if (currentHp >= 80) return { 
+                    avatar: "👸", label: "優勝", 
+                    textColor: 'text-pink-600', bgColor: 'bg-pink-50',
+                    barColor: 'bg-gradient-to-r from-pink-300 to-pink-500',
+                    shareMsg: "今が一番可愛い！全人類見て✨ 香りまで完璧♡"
+                };
+                if (currentHp >= 50) return { 
+                    avatar: "😐", label: "ビミョー", 
+                    textColor: 'text-yellow-600', bgColor: 'bg-yellow-50',
+                    barColor: 'bg-gradient-to-r from-yellow-300 to-yellow-500',
+                    shareMsg: "まだ舞える…はず。誰かお風呂入れて🥺"
+                };
+                if (currentHp >= 20) return { 
+                    avatar: "😰", label: "萎え", 
+                    textColor: 'text-orange-600', bgColor: 'bg-orange-50',
+                    barColor: 'bg-gradient-to-r from-orange-300 to-orange-500',
+                    shareMsg: "清潔感行方不明。半径2m以内立ち入り禁止⚠️"
+                };
+                return { 
+                    avatar: "🧟‍♀️", label: "終了", 
+                    textColor: 'text-purple-600', bgColor: 'bg-purple-50',
+                    barColor: 'bg-gradient-to-r from-gray-700 to-purple-800',
+                    shareMsg: "社会的に死にました😇 蘇生(入浴)求む…"
+                };
+            };
+
             // シェア機能
             const handleShare = async () => {
                 const hoursSinceBath = ((new Date() - lastBathTime) / (1000 * 60 * 60)).toFixed(1);
                 const status = getStatusDesign(hp);
                 const shareUrl = window.location.href;
-                const text = `【お風呂チェッカー】\n現在、お風呂に入らず${hoursSinceBath}時間経過…\n清潔度${Math.floor(hp)}% (${status.label})で社会的に死にかけです😇\n\n#お風呂チェッカー\n${shareUrl}`;
+                
+                const text = `【お風呂チェッカー】\n現在、お風呂に入らず${hoursSinceBath}時間経過…\n盛れ度${Math.floor(hp)}% (${status.label})\n\n「${status.shareMsg}」\n\n#お風呂チェッカー\n${shareUrl}`;
 
                 if (navigator.share) {
                     try {
@@ -358,29 +386,6 @@
                     const newLogs = [{ time: timeStr, text: text, icon: icon || "📱" }, ...prev];
                     return newLogs.slice(0, 50);
                 });
-            };
-
-            const getStatusDesign = (currentHp) => {
-                if (currentHp >= 80) return { 
-                    avatar: "👸", label: "優勝", 
-                    textColor: 'text-pink-600', bgColor: 'bg-pink-50',
-                    barColor: 'bg-gradient-to-r from-pink-300 to-pink-500'
-                };
-                if (currentHp >= 50) return { 
-                    avatar: "😐", label: "ビミョー", 
-                    textColor: 'text-yellow-600', bgColor: 'bg-yellow-50',
-                    barColor: 'bg-gradient-to-r from-yellow-300 to-yellow-500'
-                };
-                if (currentHp >= 20) return { 
-                    avatar: "😰", label: "萎え", 
-                    textColor: 'text-orange-600', bgColor: 'bg-orange-50',
-                    barColor: 'bg-gradient-to-r from-orange-300 to-orange-500'
-                };
-                return { 
-                    avatar: "🧟‍♀️", label: "終了", 
-                    textColor: 'text-purple-600', bgColor: 'bg-purple-50',
-                    barColor: 'bg-gradient-to-r from-gray-700 to-purple-800'
-                };
             };
 
             const status = getStatusDesign(hp);
