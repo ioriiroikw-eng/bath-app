@@ -100,7 +100,7 @@
             transition: left 0.5s ease-out;
         }
 
-        /* --- 撮影専用スタイル (絵文字版) --- */
+        /* --- 撮影専用スタイル --- */
         #capture-target {
             position: fixed;
             top: -9999px; left: -9999px;
@@ -125,7 +125,6 @@
         
         .cap-emoji-box {
             position: relative;
-            /* 絵文字を大きく */
             font-size: 140px; 
             line-height: 1.2;
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
@@ -169,6 +168,22 @@
             border-radius: 50%; animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* カレンダーUI修正 */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            text-align: center;
+        }
+        .calendar-cell {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -325,18 +340,18 @@
                         <div className="calendar-grid mb-2 text-center text-xs font-bold text-gray-400">
                             <div className="text-red-400">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div className="text-blue-400">土</div>
                         </div>
-                        <div className="calendar-grid gap-y-3">
+                        <div className="calendar-grid">
                             {days.map((date, i) => {
                                 if (!date) return <div key={i}></div>;
                                 const dateStr = date.toISOString().split('T')[0];
                                 const isClean = historySet.has(dateStr);
                                 const isToday = date.toDateString() === new Date().toDateString();
                                 return (
-                                    <div key={i} className="flex flex-col items-center justify-start h-10">
-                                        <span className={`text-xs mb-1 ${isToday ? 'bg-pink-500 text-white w-5 h-5 rounded-full flex items-center justify-center' : 'text-gray-600'}`}>
+                                    <div key={i} className="calendar-cell relative">
+                                        <span className={`text-xs mb-1 w-6 h-6 flex items-center justify-center rounded-full ${isToday ? 'bg-pink-500 text-white font-bold' : 'text-gray-600'}`}>
                                             {date.getDate()}
                                         </span>
-                                        {isClean && <span className="text-lg leading-none animate-bounce">💮</span>}
+                                        {isClean && <span className="absolute text-lg animate-bounce" style={{top: '2px'}}>💮</span>}
                                     </div>
                                 );
                             })}
@@ -614,7 +629,7 @@
                         </button>
 
                         <div className="inline-block bg-white/90 px-4 py-1.5 rounded-full border-2 border-pink-200 shadow-sm mx-1 flex-1 min-w-0 flex justify-center">
-                            <h1 className="text-lg font-black text-pink-500 tracking-normal flex items-center justify-center whitespace-nowrap overflow-hidden font-pop">
+                            <h1 className="text-base sm:text-lg font-black text-pink-500 tracking-normal flex items-center justify-center whitespace-nowrap overflow-hidden font-pop">
                                 お風呂チェッカー
                             </h1>
                         </div>
