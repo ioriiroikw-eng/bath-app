@@ -61,14 +61,35 @@
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
         }
         
-        /* 撮影用: エフェクトを無効化して安定させるクラス */
+        /* --- 撮影モードのデザイン（ポラロイド風） --- */
         .capture-mode {
             animation: none !important;
             backdrop-filter: none !important;
-            background: rgba(255, 255, 255, 1) !important;
+            /* 背景を白くし、パディングを広げてポラロイド風に */
+            background-color: #fff !important;
+            background-image: radial-gradient(#fce7f3 1px, transparent 1px) !important;
+            background-size: 10px 10px !important;
             box-shadow: none !important;
-            border: 2px solid #fce7f3 !important; /* pink-100 */
-            border-radius: 24px !important;
+            border: 4px solid #f9a8d4 !important; /* pink-300 */
+            border-radius: 0px !important;
+            padding: 32px !important;
+            padding-bottom: 60px !important; /* 下部を広めに */
+            width: 400px !important; /* 固定幅で高画質化 */
+            max-width: none !important;
+            margin: 0 auto !important;
+            transform: scale(1) !important;
+        }
+
+        /* 撮影時のみ表示する要素 */
+        .show-on-capture {
+            display: none;
+        }
+        .capture-mode .show-on-capture {
+            display: block;
+        }
+        /* 撮影時は非表示にする要素 */
+        .capture-mode .hide-on-capture {
+            display: none;
         }
 
         .scrollbar-hide::-webkit-scrollbar { display: none; }
@@ -95,7 +116,7 @@
         .loading-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.9);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -208,7 +229,6 @@
 
         const InstallGuide = ({ onClose }) => {
             const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
-            
             return (
                 <div className="fixed bottom-0 left-0 right-0 p-4 z-40 slide-up pb-safe">
                     <div className="bg-gray-800/95 backdrop-blur text-white rounded-2xl p-4 shadow-2xl relative border border-gray-600">
@@ -240,62 +260,44 @@
 
         const CalendarModal = ({ isOpen, onClose, history }) => {
             const [currentDate, setCurrentDate] = useState(new Date());
-
             if (!isOpen) return null;
-
             const getDaysInMonth = (date) => {
                 const year = date.getFullYear();
                 const month = date.getMonth();
                 const firstDay = new Date(year, month, 1);
                 const lastDay = new Date(year, month + 1, 0);
                 const days = [];
-                for (let i = 0; i < firstDay.getDay(); i++) {
-                    days.push(null);
-                }
-                for (let i = 1; i <= lastDay.getDate(); i++) {
-                    days.push(new Date(year, month, i));
-                }
+                for (let i = 0; i < firstDay.getDay(); i++) { days.push(null); }
+                for (let i = 1; i <= lastDay.getDate(); i++) { days.push(new Date(year, month, i)); }
                 return days;
             };
-
             const changeMonth = (delta) => {
                 const newDate = new Date(currentDate);
                 newDate.setMonth(newDate.getMonth() + delta);
                 setCurrentDate(newDate);
             };
-
             const days = getDaysInMonth(currentDate);
             const monthLabel = `${currentDate.getFullYear()}年 ${currentDate.getMonth() + 1}月`;
             const historySet = new Set(history);
-
             return (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
                     <div className="bg-white rounded-3xl p-6 w-full max-w-sm modal-enter shadow-2xl relative" onClick={e => e.stopPropagation()}>
-                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                            <Icons.X />
-                        </button>
-                        
-                        <h2 className="text-xl font-black text-pink-500 text-center mb-4 flex items-center justify-center gap-2">
-                            <Icons.Calendar size={20}/> 入浴スタンプ帳
-                        </h2>
-
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><Icons.X /></button>
+                        <h2 className="text-xl font-black text-pink-500 text-center mb-4 flex items-center justify-center gap-2"><Icons.Calendar size={20}/> 入浴スタンプ帳</h2>
                         <div className="flex justify-between items-center mb-4 px-2">
                             <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><Icons.ChevronLeft size={20}/></button>
                             <span className="font-bold text-gray-700">{monthLabel}</span>
                             <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><Icons.ChevronRight size={20}/></button>
                         </div>
-
                         <div className="calendar-grid mb-2 text-center text-xs font-bold text-gray-400">
                             <div className="text-red-400">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div className="text-blue-400">土</div>
                         </div>
-
                         <div className="calendar-grid gap-y-3">
                             {days.map((date, i) => {
                                 if (!date) return <div key={i}></div>;
                                 const dateStr = date.toISOString().split('T')[0];
                                 const isClean = historySet.has(dateStr);
                                 const isToday = date.toDateString() === new Date().toDateString();
-
                                 return (
                                     <div key={i} className="flex flex-col items-center justify-start h-10">
                                         <span className={`text-xs mb-1 ${isToday ? 'bg-pink-500 text-white w-5 h-5 rounded-full flex items-center justify-center' : 'text-gray-600'}`}>
@@ -308,10 +310,7 @@
                                 );
                             })}
                         </div>
-                        
-                        <p className="text-xs text-center text-gray-400 mt-6">
-                            お風呂に入るとスタンプが押されるよ！<br/>毎日埋めて美意識高めよう✨
-                        </p>
+                        <p className="text-xs text-center text-gray-400 mt-6">お風呂に入るとスタンプが押されるよ！<br/>毎日埋めて美意識高めよう✨</p>
                     </div>
                 </div>
             );
@@ -342,7 +341,6 @@
                         const savedDamage = localStorage.getItem(STORAGE_KEY_DAMAGE);
                         const savedLogs = localStorage.getItem(STORAGE_KEY_LOGS);
                         const savedHistory = localStorage.getItem(STORAGE_KEY_HISTORY);
-
                         if (savedHp) setHp(parseFloat(savedHp));
                         if (savedLastBath) setLastBathTime(new Date(savedLastBath));
                         if (savedDamage) setEventDamageTotal(parseFloat(savedDamage));
@@ -353,7 +351,6 @@
                     }
                 };
                 loadData();
-                
                 const ua = navigator.userAgent.toLowerCase();
                 const isInApp = /line|instagram|twitter|fbav|fban/.test(ua);
                 if (isInApp) {
@@ -364,7 +361,6 @@
                         setTimeout(() => setShowInstallGuide(true), 2000);
                     }
                 }
-                
                 const params = new URLSearchParams(window.location.search);
                 const action = params.get('action');
                 if (action) {
@@ -386,9 +382,7 @@
             }, [hp, lastBathTime, eventDamageTotal, logs, bathHistory]);
 
             useEffect(() => {
-                const timer = setInterval(() => {
-                    setCurrentTime(new Date());
-                }, 1000);
+                const timer = setInterval(() => { setCurrentTime(new Date()); }, 1000);
                 return () => clearInterval(timer);
             }, []);
 
@@ -400,12 +394,9 @@
                 let currentHp = 100 - totalDamage;
                 currentHp = Math.max(0, Math.min(100, currentHp));
                 setHp(currentHp);
-
                 if (new Date() - lastActionTime < 8000) return;
-
                 const roundedHour = Math.floor(hoursElapsed);
                 const msgObj = TIME_MESSAGES.slice().reverse().find(m => roundedHour >= m.hour);
-
                 if (msgObj && msgObj.msg !== lastAppliedTimeMsg) {
                     setCurrentMsg(msgObj.msg);
                     setLastAppliedTimeMsg(msgObj.msg);
@@ -437,14 +428,12 @@
                 setCurrentMsg("お風呂上がり最高〜✨ 今が一番可愛い！");
                 setLastAppliedTimeMsg("お風呂上がり最高〜✨ 今が一番可愛い！");
                 setLastActionTime(new Date());
-                
                 const today = new Date().toISOString().split('T')[0];
                 setBathHistory(prev => {
                     const newHistory = new Set(prev);
                     newHistory.add(today);
                     return Array.from(newHistory);
                 });
-
                 if (navigator.vibrate) navigator.vibrate([0, 100, 50, 100]);
             };
 
@@ -480,46 +469,37 @@
                 const status = getStatusDesign(hp);
                 let shareUrl = window.location.href.split('?')[0]; 
                 const text = `【お風呂チェッカー】\n現在、お風呂に入らず${hoursSinceBath}時間経過…\n盛れ度${Math.floor(hp)}% (${status.label})\n\n「${status.shareMsg}」\n\n#お風呂チェッカー\n${shareUrl}`;
-
                 if (navigator.share) {
                     try {
-                        await navigator.share({
-                            title: 'お風呂チェッカー',
-                            text: text,
-                        });
+                        await navigator.share({ title: 'お風呂チェッカー', text: text });
                         return;
-                    } catch (err) {
-                        if (err.name === 'AbortError') return;
-                    }
+                    } catch (err) { if (err.name === 'AbortError') return; }
                 }
-
                 try {
                     await navigator.clipboard.writeText(text);
                     alert('文章をコピーしました！SNSに貼り付けてね📋\n\n' + text);
                 } catch (err) {
                     const isYes = confirm('文章のコピーに失敗しました💦\n代わりにTwitter(X)の投稿画面を開きますか？');
-                    if (isYes) {
-                        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
-                    }
+                    if (isYes) { window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank'); }
                 }
             };
 
+            // 画像シェア（高画質＆デザインカスタム）
             const handleImageShare = async () => {
                 if (!cardRef.current) return;
                 setIsGeneratingImage(true);
 
                 const card = cardRef.current;
                 const avatar = card.querySelector('.purupuru');
-                if (avatar) avatar.style.animation = 'none';
+                if (avatar) avatar.style.animation = 'none'; // アニメーション一時停止
                 
-                const originalStyle = card.getAttribute('style');
-                card.classList.add('capture-mode');
+                card.classList.add('capture-mode'); // 撮影モードクラス付与
 
                 try {
-                    await new Promise(resolve => setTimeout(resolve, 300));
+                    await new Promise(resolve => setTimeout(resolve, 500)); // スタイル適用待ち
 
                     const canvas = await html2canvas(card, {
-                        scale: 3, 
+                        scale: 4, // 画質向上
                         useCORS: true,
                         backgroundColor: null,
                     });
@@ -530,9 +510,7 @@
                             restoreStyle();
                             return;
                         }
-
                         const file = new File([blob], "ofuro-check.png", { type: "image/png" });
-
                         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                             try {
                                 await navigator.share({
@@ -540,9 +518,7 @@
                                     title: 'お風呂チェッカー',
                                     text: '今の清潔度はこれ…😇 #お風呂チェッカー'
                                 });
-                            } catch (err) {
-                                console.log('Share canceled');
-                            }
+                            } catch (err) { console.log('Share canceled'); }
                         } else {
                             const link = document.createElement('a');
                             link.download = 'ofuro-check.png';
@@ -552,7 +528,6 @@
                         }
                         restoreStyle();
                     }, 'image/png');
-
                 } catch (err) {
                     console.error(err);
                     alert('ごめんね、画像の作成に失敗しちゃった💦');
@@ -561,7 +536,7 @@
 
                 function restoreStyle() {
                     card.classList.remove('capture-mode');
-                    if (avatar) avatar.style.animation = '';
+                    if (avatar) avatar.style.animation = ''; // アニメーション再開
                     setIsGeneratingImage(false);
                 }
             };
@@ -577,6 +552,7 @@
 
             const status = getStatusDesign(hp);
             const hoursSinceBath = ((new Date() - lastBathTime) / (1000 * 60 * 60)).toFixed(1);
+            const currentDateStr = new Date().toLocaleDateString('ja-JP');
 
             return (
                 <div className={`min-h-screen w-full flex flex-col items-center py-6 px-4 ${status.bgColor} transition-colors duration-500 font-sans pb-safe relative`}>
@@ -591,21 +567,18 @@
                     {showInAppWarning && <InAppBrowserWarning onClose={() => setShowInAppWarning(false)} />}
                     {showInstallGuide && <InstallGuide onClose={() => setShowInstallGuide(false)} />}
 
-                    {/* Header (UI Overlap Fix + Center Title + Gap) */}
+                    {/* Header: Sparkles削除 & 詰め調整 & 左右ボタン固定 */}
                     <div className="w-full flex justify-between items-center pt-safe mb-6 mt-2 relative z-20 px-2">
-                        {/* カレンダー */}
                         <button onClick={() => setIsCalendarOpen(true)} className="bg-white/80 p-3 rounded-full shadow-md text-pink-500 hover:scale-110 transition-transform shrink-0">
                             <Icons.Calendar size={24} />
                         </button>
 
-                        {/* タイトル (Shrinkable, Smaller Text on Mobile) */}
-                        <div className="inline-block bg-white px-3 py-1.5 rounded-full border-2 border-pink-200 shadow-sm mx-1 flex-1 min-w-0 flex justify-center">
-                            <h1 className="text-base sm:text-lg font-black text-pink-500 tracking-wider flex items-center gap-1 justify-center whitespace-nowrap overflow-hidden">
-                                <Icons.Sparkles size={16} /> お風呂チェッカー <Icons.Sparkles size={16} />
+                        <div className="inline-block bg-white px-4 py-1.5 rounded-full border-2 border-pink-200 shadow-sm mx-1 flex-1 min-w-0 flex justify-center">
+                            <h1 className="text-base sm:text-lg font-black text-pink-500 tracking-normal flex items-center justify-center whitespace-nowrap overflow-hidden">
+                                お風呂チェッカー
                             </h1>
                         </div>
 
-                        {/* シェアボタン群 (Fixed Size) */}
                         <div className="flex gap-2 shrink-0">
                             <button onClick={handleImageShare} className="bg-white/80 p-3 rounded-full shadow-md text-pink-500 hover:scale-110 transition-transform">
                                 <Icons.Camera size={24} />
@@ -616,7 +589,13 @@
                         </div>
                     </div>
 
+                    {/* Main Card */}
                     <div ref={cardRef} className="w-full max-w-sm glass-card rounded-3xl p-6 mb-6 text-center relative overflow-hidden transition-all duration-300">
+                        {/* 撮影時のみ表示するヘッダー装飾 */}
+                        <div className="show-on-capture text-pink-400 font-black text-xl mb-4 tracking-widest">
+                            ✨ HYGIENE QUEST ✨
+                        </div>
+
                         <div className="absolute top-4 right-4 rotate-12 bg-white px-3 py-1 rounded-lg border-2 border-gray-800 font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10">
                             {status.label}
                         </div>
@@ -637,6 +616,12 @@
                             <p className="font-bold text-gray-700 leading-relaxed text-sm">
                                 {currentMsg || "計算中..."}
                             </p>
+                        </div>
+
+                        {/* 撮影時のみ表示するフッター装飾 */}
+                        <div className="show-on-capture mt-6 pt-4 border-t-2 border-pink-100 flex justify-between items-center text-xs font-bold text-pink-400">
+                            <span>{currentDateStr}</span>
+                            <span>#お風呂チェッカー</span>
                         </div>
                     </div>
 
