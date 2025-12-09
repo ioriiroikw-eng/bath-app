@@ -94,7 +94,9 @@
             Calendar: (props) => <Icon {...props} path={<><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></>} />,
             X: (props) => <Icon {...props} path={<><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>} />,
             ChevronLeft: (props) => <Icon {...props} path={<><path d="m15 18-6-6 6-6"/></>} />,
-            ChevronRight: (props) => <Icon {...props} path={<><path d="m9 18 6-6-6-6"/></>} />
+            ChevronRight: (props) => <Icon {...props} path={<><path d="m9 18 6-6-6-6"/></>} />,
+            AlertTriangle: (props) => <Icon {...props} path={<><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>} />,
+            ExternalLink: (props) => <Icon {...props} path={<><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></>} />
         };
 
         const BASE_RATE_PER_HOUR = 2.5; 
@@ -130,6 +132,43 @@
         const STORAGE_KEY_DAMAGE = 'hq_damage';
         const STORAGE_KEY_LOGS = 'hq_logs';
         const STORAGE_KEY_HISTORY = 'hq_history';
+
+        // --- アプリ内ブラウザ警告モーダル ---
+        const InAppBrowserWarning = () => {
+            // 簡易的なUA判定
+            const ua = navigator.userAgent.toLowerCase();
+            const isInApp = /line|instagram|twitter|fbav|fban/.test(ua);
+
+            if (!isInApp) return null;
+
+            return (
+                <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6 modal-enter">
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm text-center relative border-4 border-yellow-400">
+                        <div className="text-yellow-500 mb-2 flex justify-center">
+                            <Icons.AlertTriangle size={48} />
+                        </div>
+                        <h2 className="text-xl font-black text-gray-800 mb-2">
+                            ⚠️ データが消えちゃうかも！
+                        </h2>
+                        <p className="text-sm text-gray-600 mb-4 leading-relaxed font-bold">
+                            今「LINE」などのアプリの中で開いています。<br/>
+                            このままだと履歴が保存されません💦
+                        </p>
+                        <div className="bg-gray-100 p-4 rounded-xl text-left mb-4 text-sm text-gray-700">
+                            <p className="mb-2 font-bold">👇 こうしてね！</p>
+                            <ol className="list-decimal list-inside space-y-1">
+                                <li>右上の <span className="font-bold bg-white px-1 rounded">︙</span> や <span className="font-bold bg-white px-1 rounded">シェア</span> ボタンを押す</li>
+                                <li><span className="font-bold text-blue-600">「ブラウザで開く」</span> を選ぶ</li>
+                                <li>Safari や Chrome で開けばOK！</li>
+                            </ol>
+                        </div>
+                        <button onClick={() => window.location.reload()} className="text-xs text-gray-400 underline">
+                            分かったけどこのまま使う
+                        </button>
+                    </div>
+                </div>
+            );
+        };
 
         const CalendarModal = ({ isOpen, onClose, history }) => {
             const [currentDate, setCurrentDate] = useState(new Date());
@@ -353,17 +392,12 @@
                 };
             };
 
-            // シェア機能
             const handleShare = async () => {
                 const hoursSinceBath = ((new Date() - lastBathTime) / (1000 * 60 * 60)).toFixed(1);
                 const status = getStatusDesign(hp);
                 
-                // URLにLINE用の魔法の言葉(?openExternalBrowser=1)をつける
-                let shareUrl = window.location.href;
-                const separator = shareUrl.includes('?') ? '&' : '?';
-                if (!shareUrl.includes('openExternalBrowser=1')) {
-                    shareUrl = `${shareUrl}${separator}openExternalBrowser=1`;
-                }
+                // ?openExternalBrowser=1 は削除（警告が出るので不要）
+                let shareUrl = window.location.href.split('?')[0]; 
                 
                 const text = `【お風呂チェッカー】\n現在、お風呂に入らず${hoursSinceBath}時間経過…\n盛れ度${Math.floor(hp)}% (${status.label})\n\n「${status.shareMsg}」\n\n#お風呂チェッカー\n${shareUrl}`;
 
@@ -405,6 +439,9 @@
             return (
                 <div className={`min-h-screen w-full flex flex-col items-center py-6 px-4 ${status.bgColor} transition-colors duration-500 font-sans pb-safe relative`}>
                     
+                    {/* アプリ内ブラウザ警告 */}
+                    <InAppBrowserWarning />
+
                     {/* Header (Flex Layout) */}
                     <div className="w-full flex justify-between items-center pt-safe mb-6 mt-2 relative z-20">
                         {/* カレンダーボタン */}
