@@ -24,6 +24,9 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- html2canvas (画像生成用) -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
@@ -79,13 +82,35 @@
             from { transform: translateY(100%); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+        
+        /* ローディングオーバーレイ */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #fbcfe8;
+            border-top: 4px solid #ec4899;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         const Icon = ({ path, className, size = 24, onClick }) => (
             <svg onClick={onClick} xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -105,7 +130,8 @@
             AlertTriangle: (props) => <Icon {...props} path={<><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>} />,
             ExternalLink: (props) => <Icon {...props} path={<><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></>} />,
             Download: (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>} />,
-            IosShare: (props) => <Icon {...props} path={<><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></>} />
+            IosShare: (props) => <Icon {...props} path={<><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></>} />,
+            Camera: (props) => <Icon {...props} path={<><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></>} />
         };
 
         const BASE_RATE_PER_HOUR = 2.5; 
@@ -165,7 +191,7 @@
                                 <li>Safari や Chrome で開けばOK！</li>
                             </ol>
                         </div>
-                        <button onClick={onClose} className="text-xs text-gray-400 underline">
+                        <button onClick={onClose} className="text-xs text-gray-400 underline p-2">
                             分かったけどこのまま使う
                         </button>
                     </div>
@@ -297,10 +323,10 @@
             const [lastActionTime, setLastActionTime] = useState(new Date(0));
             const [bathHistory, setBathHistory] = useState([]);
             const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-            
-            // 状態管理用
             const [showInAppWarning, setShowInAppWarning] = useState(false);
             const [showInstallGuide, setShowInstallGuide] = useState(false);
+            const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+            const cardRef = useRef(null);
 
             useEffect(() => {
                 const loadData = () => {
@@ -322,16 +348,13 @@
                 };
                 loadData();
                 
-                // アプリ内ブラウザ判定
                 const ua = navigator.userAgent.toLowerCase();
                 const isInApp = /line|instagram|twitter|fbav|fban/.test(ua);
                 if (isInApp) {
                     setShowInAppWarning(true);
                 } else {
-                    // PWAモード(ホーム画面)でない場合のみインストールガイドを表示
                     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
                     if (!isStandalone) {
-                        // 少し遅れて表示
                         setTimeout(() => setShowInstallGuide(true), 2000);
                     }
                 }
@@ -449,9 +472,7 @@
             const handleShare = async () => {
                 const hoursSinceBath = ((new Date() - lastBathTime) / (1000 * 60 * 60)).toFixed(1);
                 const status = getStatusDesign(hp);
-                
                 let shareUrl = window.location.href.split('?')[0]; 
-                
                 const text = `【お風呂チェッカー】\n現在、お風呂に入らず${hoursSinceBath}時間経過…\n盛れ度${Math.floor(hp)}% (${status.label})\n\n「${status.shareMsg}」\n\n#お風呂チェッカー\n${shareUrl}`;
 
                 if (navigator.share) {
@@ -477,6 +498,58 @@
                 }
             };
 
+            // インスタ用画像生成＆シェア
+            const handleImageShare = async () => {
+                if (!cardRef.current) return;
+                setIsGeneratingImage(true);
+
+                try {
+                    // html2canvasで画像を生成
+                    const canvas = await html2canvas(cardRef.current, {
+                        scale: 3, // 高画質化
+                        useCORS: true, // 外部画像の許可(icon.pngなど)
+                        backgroundColor: null, // 透明背景を維持
+                    });
+
+                    // Blobに変換
+                    canvas.toBlob(async (blob) => {
+                        if (!blob) {
+                            alert('画像の生成に失敗しました💦');
+                            setIsGeneratingImage(false);
+                            return;
+                        }
+
+                        const file = new File([blob], "ofuro-check.png", { type: "image/png" });
+
+                        // Web Share API Level 2 (ファイル共有) 対応チェック
+                        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                            try {
+                                await navigator.share({
+                                    files: [file],
+                                    title: 'お風呂チェッカー',
+                                    text: '今の清潔度はこれ…😇 #お風呂チェッカー'
+                                });
+                            } catch (err) {
+                                console.log('Share canceled');
+                            }
+                        } else {
+                            // 非対応の場合はダウンロードさせる
+                            const link = document.createElement('a');
+                            link.download = 'ofuro-check.png';
+                            link.href = canvas.toDataURL();
+                            link.click();
+                            alert('画像を保存しました！\nInstagramのストーリーでシェアしてね📸');
+                        }
+                        setIsGeneratingImage(false);
+                    }, 'image/png');
+
+                } catch (err) {
+                    console.error(err);
+                    alert('ごめんね、画像の作成に失敗しちゃった💦');
+                    setIsGeneratingImage(false);
+                }
+            };
+
             const addLog = (text, icon) => {
                 const now = new Date();
                 const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -492,13 +565,18 @@
             return (
                 <div className={`min-h-screen w-full flex flex-col items-center py-6 px-4 ${status.bgColor} transition-colors duration-500 font-sans pb-safe relative`}>
                     
-                    {/* アプリ内ブラウザ警告 */}
+                    {/* ローディング表示 */}
+                    {isGeneratingImage && (
+                        <div className="loading-overlay">
+                            <div className="spinner mb-4"></div>
+                            <p className="font-bold text-pink-500">画像を作ってるよ...🎨</p>
+                        </div>
+                    )}
+
                     {showInAppWarning && <InAppBrowserWarning onClose={() => setShowInAppWarning(false)} />}
-                    
-                    {/* インストールガイド (アプリ内ブラウザでなく、PWAでもない場合) */}
                     {showInstallGuide && <InstallGuide onClose={() => setShowInstallGuide(false)} />}
 
-                    {/* Header (Flex Layout) */}
+                    {/* Header */}
                     <div className="w-full flex justify-between items-center pt-safe mb-6 mt-2 relative z-20">
                         <button onClick={() => setIsCalendarOpen(true)} className="bg-white/80 p-3 rounded-full shadow-md text-pink-500 hover:scale-110 transition-transform">
                             <Icons.Calendar size={24} />
@@ -510,12 +588,20 @@
                             </h1>
                         </div>
 
-                        <button onClick={handleShare} className="bg-white/80 p-3 rounded-full shadow-md text-blue-500 hover:scale-110 transition-transform">
-                            <Icons.Share size={24} />
-                        </button>
+                        <div className="flex gap-2">
+                            {/* カメラボタン (インスタ用) */}
+                            <button onClick={handleImageShare} className="bg-white/80 p-3 rounded-full shadow-md text-pink-500 hover:scale-110 transition-transform">
+                                <Icons.Camera size={24} />
+                            </button>
+                            {/* シェアボタン (テキスト用) */}
+                            <button onClick={handleShare} className="bg-white/80 p-3 rounded-full shadow-md text-blue-500 hover:scale-110 transition-transform">
+                                <Icons.Share size={24} />
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="w-full max-w-sm glass-card rounded-3xl p-6 mb-6 text-center relative overflow-hidden transition-all duration-300">
+                    {/* Main Card (キャプチャ対象) */}
+                    <div ref={cardRef} className="w-full max-w-sm glass-card rounded-3xl p-6 mb-6 text-center relative overflow-hidden transition-all duration-300" id="share-card">
                         <div className="absolute top-4 right-4 rotate-12 bg-white px-3 py-1 rounded-lg border-2 border-gray-800 font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10">
                             {status.label}
                         </div>
