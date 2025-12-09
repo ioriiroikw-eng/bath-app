@@ -25,7 +25,7 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- html2canvas (画像生成用) -->
+    <!-- html2canvas -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
     <!-- Google Fonts -->
@@ -60,6 +60,16 @@
             border: 2px solid rgba(255, 255, 255, 0.9);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
         }
+        
+        /* 撮影用: エフェクトを無効化して安定させるクラス */
+        .capture-mode {
+            animation: none !important;
+            backdrop-filter: none !important;
+            background: rgba(255, 255, 255, 1) !important;
+            box-shadow: none !important;
+            border: 2px solid #fce7f3 !important; /* pink-100 */
+            border-radius: 24px !important;
+        }
 
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
@@ -76,14 +86,12 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        /* インストールガイドのアニメーション */
         .slide-up { animation: slideUp 0.5s ease-out forwards; }
         @keyframes slideUp {
             from { transform: translateY(100%); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
         
-        /* ローディングオーバーレイ */
         .loading-overlay {
             position: fixed;
             inset: 0;
@@ -168,7 +176,6 @@
         const STORAGE_KEY_LOGS = 'hq_logs';
         const STORAGE_KEY_HISTORY = 'hq_history';
 
-        // --- アプリ内ブラウザ警告モーダル ---
         const InAppBrowserWarning = ({ onClose }) => {
             return (
                 <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6 modal-enter">
@@ -199,7 +206,6 @@
             );
         };
 
-        // --- ホーム画面追加ガイド ---
         const InstallGuide = ({ onClose }) => {
             const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
             
@@ -498,30 +504,35 @@
                 }
             };
 
-            // インスタ用画像生成＆シェア
             const handleImageShare = async () => {
                 if (!cardRef.current) return;
                 setIsGeneratingImage(true);
 
+                const card = cardRef.current;
+                const avatar = card.querySelector('.purupuru');
+                if (avatar) avatar.style.animation = 'none';
+                
+                const originalStyle = card.getAttribute('style');
+                card.classList.add('capture-mode');
+
                 try {
-                    // html2canvasで画像を生成
-                    const canvas = await html2canvas(cardRef.current, {
-                        scale: 3, // 高画質化
-                        useCORS: true, // 外部画像の許可(icon.pngなど)
-                        backgroundColor: null, // 透明背景を維持
+                    await new Promise(resolve => setTimeout(resolve, 300));
+
+                    const canvas = await html2canvas(card, {
+                        scale: 3, 
+                        useCORS: true,
+                        backgroundColor: null,
                     });
 
-                    // Blobに変換
                     canvas.toBlob(async (blob) => {
                         if (!blob) {
                             alert('画像の生成に失敗しました💦');
-                            setIsGeneratingImage(false);
+                            restoreStyle();
                             return;
                         }
 
                         const file = new File([blob], "ofuro-check.png", { type: "image/png" });
 
-                        // Web Share API Level 2 (ファイル共有) 対応チェック
                         if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                             try {
                                 await navigator.share({
@@ -533,19 +544,24 @@
                                 console.log('Share canceled');
                             }
                         } else {
-                            // 非対応の場合はダウンロードさせる
                             const link = document.createElement('a');
                             link.download = 'ofuro-check.png';
                             link.href = canvas.toDataURL();
                             link.click();
                             alert('画像を保存しました！\nInstagramのストーリーでシェアしてね📸');
                         }
-                        setIsGeneratingImage(false);
+                        restoreStyle();
                     }, 'image/png');
 
                 } catch (err) {
                     console.error(err);
                     alert('ごめんね、画像の作成に失敗しちゃった💦');
+                    restoreStyle();
+                }
+
+                function restoreStyle() {
+                    card.classList.remove('capture-mode');
+                    if (avatar) avatar.style.animation = '';
                     setIsGeneratingImage(false);
                 }
             };
@@ -565,7 +581,6 @@
             return (
                 <div className={`min-h-screen w-full flex flex-col items-center py-6 px-4 ${status.bgColor} transition-colors duration-500 font-sans pb-safe relative`}>
                     
-                    {/* ローディング表示 */}
                     {isGeneratingImage && (
                         <div className="loading-overlay">
                             <div className="spinner mb-4"></div>
@@ -576,32 +591,32 @@
                     {showInAppWarning && <InAppBrowserWarning onClose={() => setShowInAppWarning(false)} />}
                     {showInstallGuide && <InstallGuide onClose={() => setShowInstallGuide(false)} />}
 
-                    {/* Header */}
-                    <div className="w-full flex justify-between items-center pt-safe mb-6 mt-2 relative z-20">
-                        <button onClick={() => setIsCalendarOpen(true)} className="bg-white/80 p-3 rounded-full shadow-md text-pink-500 hover:scale-110 transition-transform">
+                    {/* Header (UI Overlap Fix + Center Title + Gap) */}
+                    <div className="w-full flex justify-between items-center pt-safe mb-6 mt-2 relative z-20 px-2">
+                        {/* カレンダー */}
+                        <button onClick={() => setIsCalendarOpen(true)} className="bg-white/80 p-3 rounded-full shadow-md text-pink-500 hover:scale-110 transition-transform shrink-0">
                             <Icons.Calendar size={24} />
                         </button>
 
-                        <div className="inline-block bg-white px-4 py-2 rounded-full border-2 border-pink-200 shadow-sm mx-2">
-                            <h1 className="text-lg font-black text-pink-500 tracking-wider flex items-center gap-2 justify-center whitespace-nowrap">
-                                <Icons.Sparkles size={18} /> お風呂チェッカー <Icons.Sparkles size={18} />
+                        {/* タイトル (Shrinkable, Smaller Text on Mobile) */}
+                        <div className="inline-block bg-white px-3 py-1.5 rounded-full border-2 border-pink-200 shadow-sm mx-1 flex-1 min-w-0 flex justify-center">
+                            <h1 className="text-base sm:text-lg font-black text-pink-500 tracking-wider flex items-center gap-1 justify-center whitespace-nowrap overflow-hidden">
+                                <Icons.Sparkles size={16} /> お風呂チェッカー <Icons.Sparkles size={16} />
                             </h1>
                         </div>
 
-                        <div className="flex gap-2">
-                            {/* カメラボタン (インスタ用) */}
+                        {/* シェアボタン群 (Fixed Size) */}
+                        <div className="flex gap-2 shrink-0">
                             <button onClick={handleImageShare} className="bg-white/80 p-3 rounded-full shadow-md text-pink-500 hover:scale-110 transition-transform">
                                 <Icons.Camera size={24} />
                             </button>
-                            {/* シェアボタン (テキスト用) */}
                             <button onClick={handleShare} className="bg-white/80 p-3 rounded-full shadow-md text-blue-500 hover:scale-110 transition-transform">
                                 <Icons.Share size={24} />
                             </button>
                         </div>
                     </div>
 
-                    {/* Main Card (キャプチャ対象) */}
-                    <div ref={cardRef} className="w-full max-w-sm glass-card rounded-3xl p-6 mb-6 text-center relative overflow-hidden transition-all duration-300" id="share-card">
+                    <div ref={cardRef} className="w-full max-w-sm glass-card rounded-3xl p-6 mb-6 text-center relative overflow-hidden transition-all duration-300">
                         <div className="absolute top-4 right-4 rotate-12 bg-white px-3 py-1 rounded-lg border-2 border-gray-800 font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10">
                             {status.label}
                         </div>
