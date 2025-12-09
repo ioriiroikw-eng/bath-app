@@ -54,8 +54,8 @@
         .purupuru { animation: purupuru 2s infinite; }
         @keyframes purupuru {
             0% { transform: scale(1, 1); }
-            10% { transform: scale(1.05, 0.95); }
-            40% { transform: scale(0.95, 1.05); }
+            10% { transform: scale(1.02, 0.98); }
+            40% { transform: scale(0.98, 1.02); }
             50% { transform: scale(1, 1); }
         }
         
@@ -100,13 +100,19 @@
             transition: left 0.5s ease-out;
         }
 
-        /* --- 撮影専用スタイル --- */
+        /* --- 撮影専用スタイル (シンプル文字のみ版・レイアウト修正Ver5.7) --- */
         #capture-target {
             position: fixed;
             top: -9999px; left: -9999px;
             width: 375px;
-            min-height: 600px;
+            min-height: 500px;
             background: linear-gradient(135deg, #fff0f5 0%, #ffe4e6 100%);
+            background-image: 
+                radial-gradient(#fbcfe8 15%, transparent 16%),
+                radial-gradient(#fbcfe8 15%, transparent 16%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            
             border: 12px solid #fff;
             padding: 40px 30px;
             text-align: center;
@@ -119,38 +125,68 @@
             justify-content: center;
             z-index: -1;
         }
-        .cap-header { margin-bottom: 20px; width: 100%; }
-        .cap-title { color: #ec4899; font-size: 28px; text-shadow: 2px 2px 0 #fff; margin: 0; }
-        .cap-main { position: relative; margin: 10px 0 30px 0; width: 100%; display: flex; flex-direction: column; align-items: center; }
         
-        .cap-emoji-box {
-            position: relative;
-            font-size: 140px; 
-            line-height: 1.2;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
-        }
-        .cap-deco {
-            position: absolute; top: -10px; right: -20px;
-            font-size: 60px; filter: drop-shadow(2px 2px 0 #fff);
-        }
-        
-        .cap-status { font-size: 48px; color: #ec4899; text-shadow: 3px 3px 0 #fff; margin: 10px 0; }
-        .cap-meter-box { width: 100%; margin: 20px 0; }
-        .cap-meter-bg {
-            width: 100%; height: 24px;
-            background-color: #fff;
+        .cap-title-box {
+            margin-bottom: 30px; /* マージン調整 */
+            background: rgba(255,255,255,0.98);
+            padding: 14px 32px; /* パディング微調整 */
+            border-radius: 9999px;
             border: 3px solid #f9a8d4;
-            border-radius: 12px;
-            overflow: hidden;
+            display: inline-block;
+            box-shadow: 0 6px 14px rgba(236, 72, 153, 0.25); /* 影を少し強く */
         }
-        .cap-meter-fill { height: 100%; background: linear-gradient(90deg, #f9a8d4, #fbbf24); }
-        .cap-time-box {
-            background: #fff; padding: 15px 30px;
-            border-radius: 20px; border: 3px solid #fbcfe8;
-            margin-top: 10px;
+        .cap-title { 
+            color: #ec4899; 
+            font-size: 26px; 
+            margin: 0;
+            letter-spacing: 0.08em; /* 文字間を少し広げてバランスを取る */
+            line-height: 1;
+            white-space: nowrap;
         }
-        .cap-time { font-size: 36px; font-weight: bold; color: #be185d; font-family: 'Zen Maru Gothic', sans-serif; }
-        .cap-footer { margin-top: auto; color: #db2777; font-size: 14px; font-weight: bold; opacity: 0.8; }
+        
+        .cap-main { 
+            width: 100%; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            margin-bottom: 30px; /* マージン調整 */
+        }
+        
+        .cap-label-small {
+            font-size: 18px;
+            color: #db2777;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .cap-time-huge {
+            font-size: 80px;
+            line-height: 1;
+            font-weight: 900;
+            color: #be185d;
+            text-shadow: 4px 4px 0 #fff, 0 0 20px rgba(236, 72, 153, 0.2);
+            font-family: 'Zen Maru Gothic', sans-serif;
+            margin: 10px 0;
+        }
+        
+        .cap-unit {
+            font-size: 24px;
+            color: #db2777;
+            margin-left: 5px;
+        }
+        
+        .cap-footer { 
+            margin-top: auto; 
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            color: #db2777; 
+            font-size: 12px; 
+            font-weight: bold; 
+            opacity: 0.6; 
+            border-top: 2px dashed #fbcfe8;
+            padding-top: 15px;
+        }
 
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
@@ -199,7 +235,7 @@
         );
 
         const Icons = {
-            Sparkles: (props) => <Icon {...props} path={<><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M5 19v2"/><path d="M9 19H5"/></>} />,
+            Sparkles: (props) => <Icon {...props} path={<><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M5 19v2"/><path d="M9 19H5"/></>} />,
             Bath: (props) => <Icon {...props} path={<><path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-1-1.5C3.81 2 2.5 3.31 2.5 5.5c0 1.56 1.15 2.1 1.8 2.2"/><path d="M21 10c0-1.66-1.34-3-3-3-1.12 0-2.1.58-2.6 1.5L14 10"/><path d="M7 10h14L19.5 21h-11Z"/><path d="M7 10v4"/></>} />,
             Clock: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} />,
             Share: (props) => <Icon {...props} path={<><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></>} />,
@@ -482,7 +518,6 @@
                 if (navigator.vibrate) navigator.vibrate([0, 100, 50, 100]);
             };
 
-            // JK向けステータス定義（アイコン周りのエフェクトも定義）
             const getStatusDesign = (currentHp) => {
                 if (currentHp >= 80) return { 
                     avatar: "👸", label: "大勝利", 
@@ -533,7 +568,7 @@
                 if (!target) return;
                 setIsGeneratingImage(true);
                 try {
-                    await new Promise(resolve => setTimeout(resolve, 500));
+                    await new Promise(resolve => setTimeout(resolve, 800)); // 安定待ち時間を少し延長
                     const canvas = await html2canvas(target, {
                         scale: 2, 
                         useCORS: true,
@@ -582,34 +617,27 @@
 
             const status = getStatusDesign(hp);
             const hoursSinceBath = ((new Date() - lastBathTime) / (1000 * 60 * 60)).toFixed(1);
+            const currentDateStr = new Date().toLocaleDateString('ja-JP');
 
             return (
                 <div className={`min-h-screen w-full flex flex-col items-center py-6 px-4 transition-colors duration-500 font-sans pb-safe relative`}>
                     
                     <FloatingBackground />
 
-                    {/* 撮影専用の隠しDOM (絵文字版) */}
+                    {/* 撮影専用の隠しDOM (超シンプル版) */}
                     <div id="capture-target">
-                        <div className="cap-header">
+                        <div className="cap-title-box">
                             <h1 className="cap-title">お風呂チェッカー</h1>
                         </div>
                         <div className="cap-main">
-                            <div className="cap-emoji-box">
-                                {status.avatar}
-                                <div className="cap-deco">{status.deco}</div>
-                            </div>
-                            <div className="cap-status font-pop">{status.label}</div>
+                            <div className="cap-label-small">お風呂に入らず</div>
+                            <div className="cap-time-huge">{hoursSinceBath}<span className="cap-unit">時間</span></div>
+                            <div className="cap-label-small">経過...</div>
                         </div>
-                        <div className="cap-meter-box">
-                            <div className="cap-meter-bg">
-                                <div className="cap-meter-fill" style={{ width: `${hp}%` }}></div>
-                            </div>
+                        <div className="cap-footer">
+                            <span>{currentDateStr}</span>
+                            <span>ID: {userId}</span>
                         </div>
-                        <div className="cap-time-box">
-                            <div className="cap-time-label">お風呂に入らず</div>
-                            <div className="cap-time">{hoursSinceBath}時間経過</div>
-                        </div>
-                        <div className="cap-footer">ID: {userId}</div>
                     </div>
 
                     {isGeneratingImage && (
@@ -629,7 +657,7 @@
                         </button>
 
                         <div className="inline-block bg-white/90 px-4 py-1.5 rounded-full border-2 border-pink-200 shadow-sm mx-1 flex-1 min-w-0 flex justify-center">
-                            <h1 className="text-base sm:text-lg font-black text-pink-500 tracking-normal flex items-center justify-center whitespace-nowrap overflow-hidden font-pop">
+                            <h1 className="text-lg font-black text-pink-500 tracking-normal flex items-center justify-center whitespace-nowrap overflow-hidden font-pop">
                                 お風呂チェッカー
                             </h1>
                         </div>
