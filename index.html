@@ -72,6 +72,13 @@
             0% { transform: scale(0.8); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
+
+        /* インストールガイドのアニメーション */
+        .slide-up { animation: slideUp 0.5s ease-out forwards; }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -96,7 +103,9 @@
             ChevronLeft: (props) => <Icon {...props} path={<><path d="m15 18-6-6 6-6"/></>} />,
             ChevronRight: (props) => <Icon {...props} path={<><path d="m9 18 6-6-6-6"/></>} />,
             AlertTriangle: (props) => <Icon {...props} path={<><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>} />,
-            ExternalLink: (props) => <Icon {...props} path={<><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></>} />
+            ExternalLink: (props) => <Icon {...props} path={<><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></>} />,
+            Download: (props) => <Icon {...props} path={<><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>} />,
+            IosShare: (props) => <Icon {...props} path={<><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></>} />
         };
 
         const BASE_RATE_PER_HOUR = 2.5; 
@@ -134,13 +143,7 @@
         const STORAGE_KEY_HISTORY = 'hq_history';
 
         // --- アプリ内ブラウザ警告モーダル ---
-        const InAppBrowserWarning = () => {
-            // 簡易的なUA判定
-            const ua = navigator.userAgent.toLowerCase();
-            const isInApp = /line|instagram|twitter|fbav|fban/.test(ua);
-
-            if (!isInApp) return null;
-
+        const InAppBrowserWarning = ({ onClose }) => {
             return (
                 <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6 modal-enter">
                     <div className="bg-white rounded-3xl p-6 w-full max-w-sm text-center relative border-4 border-yellow-400">
@@ -162,9 +165,42 @@
                                 <li>Safari や Chrome で開けばOK！</li>
                             </ol>
                         </div>
-                        <button onClick={() => window.location.reload()} className="text-xs text-gray-400 underline">
+                        <button onClick={onClose} className="text-xs text-gray-400 underline">
                             分かったけどこのまま使う
                         </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- ホーム画面追加ガイド ---
+        const InstallGuide = ({ onClose }) => {
+            const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+            
+            return (
+                <div className="fixed bottom-0 left-0 right-0 p-4 z-40 slide-up pb-safe">
+                    <div className="bg-gray-800/95 backdrop-blur text-white rounded-2xl p-4 shadow-2xl relative border border-gray-600">
+                        <button onClick={onClose} className="absolute top-2 right-2 text-gray-400 p-2">
+                            <Icons.X size={18} />
+                        </button>
+                        <div className="flex items-start gap-4">
+                            <div className="bg-pink-500 p-3 rounded-xl shrink-0">
+                                <Icons.Download size={24} />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-sm mb-1">ホーム画面に追加しよう！</h3>
+                                <p className="text-xs text-gray-300 leading-relaxed mb-2">
+                                    アプリみたいに使えて、全画面で見やすくなるよ✨
+                                </p>
+                                <div className="text-xs font-bold text-pink-300 flex items-center gap-1">
+                                    {isIOS ? (
+                                        <>下の <span className="bg-gray-600 px-1 rounded inline-flex items-center justify-center"><Icons.IosShare size={12}/></span> から「ホーム画面に追加」</>
+                                    ) : (
+                                        <>メニュー <span className="bg-gray-600 px-1 rounded">︙</span> から「ホーム画面に追加」</>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             );
@@ -261,6 +297,10 @@
             const [lastActionTime, setLastActionTime] = useState(new Date(0));
             const [bathHistory, setBathHistory] = useState([]);
             const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+            
+            // 状態管理用
+            const [showInAppWarning, setShowInAppWarning] = useState(false);
+            const [showInstallGuide, setShowInstallGuide] = useState(false);
 
             useEffect(() => {
                 const loadData = () => {
@@ -281,6 +321,20 @@
                     }
                 };
                 loadData();
+                
+                // アプリ内ブラウザ判定
+                const ua = navigator.userAgent.toLowerCase();
+                const isInApp = /line|instagram|twitter|fbav|fban/.test(ua);
+                if (isInApp) {
+                    setShowInAppWarning(true);
+                } else {
+                    // PWAモード(ホーム画面)でない場合のみインストールガイドを表示
+                    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+                    if (!isStandalone) {
+                        // 少し遅れて表示
+                        setTimeout(() => setShowInstallGuide(true), 2000);
+                    }
+                }
                 
                 const params = new URLSearchParams(window.location.search);
                 const action = params.get('action');
@@ -396,7 +450,6 @@
                 const hoursSinceBath = ((new Date() - lastBathTime) / (1000 * 60 * 60)).toFixed(1);
                 const status = getStatusDesign(hp);
                 
-                // ?openExternalBrowser=1 は削除（警告が出るので不要）
                 let shareUrl = window.location.href.split('?')[0]; 
                 
                 const text = `【お風呂チェッカー】\n現在、お風呂に入らず${hoursSinceBath}時間経過…\n盛れ度${Math.floor(hp)}% (${status.label})\n\n「${status.shareMsg}」\n\n#お風呂チェッカー\n${shareUrl}`;
@@ -440,23 +493,23 @@
                 <div className={`min-h-screen w-full flex flex-col items-center py-6 px-4 ${status.bgColor} transition-colors duration-500 font-sans pb-safe relative`}>
                     
                     {/* アプリ内ブラウザ警告 */}
-                    <InAppBrowserWarning />
+                    {showInAppWarning && <InAppBrowserWarning onClose={() => setShowInAppWarning(false)} />}
+                    
+                    {/* インストールガイド (アプリ内ブラウザでなく、PWAでもない場合) */}
+                    {showInstallGuide && <InstallGuide onClose={() => setShowInstallGuide(false)} />}
 
                     {/* Header (Flex Layout) */}
                     <div className="w-full flex justify-between items-center pt-safe mb-6 mt-2 relative z-20">
-                        {/* カレンダーボタン */}
                         <button onClick={() => setIsCalendarOpen(true)} className="bg-white/80 p-3 rounded-full shadow-md text-pink-500 hover:scale-110 transition-transform">
                             <Icons.Calendar size={24} />
                         </button>
 
-                        {/* タイトル */}
                         <div className="inline-block bg-white px-4 py-2 rounded-full border-2 border-pink-200 shadow-sm mx-2">
                             <h1 className="text-lg font-black text-pink-500 tracking-wider flex items-center gap-2 justify-center whitespace-nowrap">
                                 <Icons.Sparkles size={18} /> お風呂チェッカー <Icons.Sparkles size={18} />
                             </h1>
                         </div>
 
-                        {/* シェアボタン */}
                         <button onClick={handleShare} className="bg-white/80 p-3 rounded-full shadow-md text-blue-500 hover:scale-110 transition-transform">
                             <Icons.Share size={24} />
                         </button>
