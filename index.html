@@ -7,16 +7,12 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#fbcfe8">
     <title>お風呂チェッカー</title>
-
-    <!-- アイコン設定 -->
-<link rel="apple-touch-icon" href="icon.png">
-<link rel="icon" href="icon.png">
     
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     
-    <!-- Babel (JSX変換用) -->
+    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <!-- Tailwind CSS -->
@@ -25,11 +21,15 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
 
+    <!-- アイコン設定 -->
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2972/2972108.png">
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2972/2972108.png">
+
     <style>
         body {
             font-family: 'Zen Maru Gothic', sans-serif;
             background-color: #ffe4e6;
-            overscroll-behavior-y: none; /* バウンス防止 */
+            overscroll-behavior-y: none;
             -webkit-tap-highlight-color: transparent;
         }
         
@@ -42,15 +42,26 @@
         }
         
         .glass-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.9);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
         }
 
-        /* スクロールバー非表示 */
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        
+        .modal-enter { animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes modalPop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -59,9 +70,9 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // --- アイコンコンポーネント (SVG直接定義) ---
-        const Icon = ({ path, className, size = 24 }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        // --- アイコンコンポーネント ---
+        const Icon = ({ path, className, size = 24, onClick }) => (
+            <svg onClick={onClick} xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
                 {path}
             </svg>
         );
@@ -69,10 +80,14 @@
         const Icons = {
             Sparkles: (props) => <Icon {...props} path={<><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M5 19v2"/><path d="M9 19H5"/></>} />,
             Bath: (props) => <Icon {...props} path={<><path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-1-1.5C3.81 2 2.5 3.31 2.5 5.5c0 1.56 1.15 2.1 1.8 2.2"/><path d="M21 10c0-1.66-1.34-3-3-3-1.12 0-2.1.58-2.6 1.5L14 10"/><path d="M7 10h14L19.5 21h-11Z"/><path d="M7 10v4"/></>} />,
-            Clock: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} />
+            Clock: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} />,
+            Share: (props) => <Icon {...props} path={<><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></>} />,
+            Calendar: (props) => <Icon {...props} path={<><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></>} />,
+            X: (props) => <Icon {...props} path={<><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>} />,
+            ChevronLeft: (props) => <Icon {...props} path={<><path d="m15 18-6-6 6-6"/></>} />,
+            ChevronRight: (props) => <Icon {...props} path={<><path d="m9 18 6-6-6-6"/></>} />
         };
 
-        // --- 設定定数 ---
         const BASE_RATE_PER_HOUR = 2.5; 
 
         const TIME_MESSAGES = [
@@ -101,14 +116,92 @@
             mask: { label: "ずっとマスク", damage: 5, emoji: "😷", msg: "口周りが蒸れてる…肌荒れ注意報🚨" }
         };
 
-        // ストレージキー
         const STORAGE_KEY_HP = 'hq_hp';
         const STORAGE_KEY_LAST_BATH = 'hq_last_bath';
         const STORAGE_KEY_DAMAGE = 'hq_damage';
         const STORAGE_KEY_LOGS = 'hq_logs';
+        const STORAGE_KEY_HISTORY = 'hq_history';
+
+        const CalendarModal = ({ isOpen, onClose, history }) => {
+            const [currentDate, setCurrentDate] = useState(new Date());
+
+            if (!isOpen) return null;
+
+            const getDaysInMonth = (date) => {
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const days = [];
+                for (let i = 0; i < firstDay.getDay(); i++) {
+                    days.push(null);
+                }
+                for (let i = 1; i <= lastDay.getDate(); i++) {
+                    days.push(new Date(year, month, i));
+                }
+                return days;
+            };
+
+            const changeMonth = (delta) => {
+                const newDate = new Date(currentDate);
+                newDate.setMonth(newDate.getMonth() + delta);
+                setCurrentDate(newDate);
+            };
+
+            const days = getDaysInMonth(currentDate);
+            const monthLabel = `${currentDate.getFullYear()}年 ${currentDate.getMonth() + 1}月`;
+            const historySet = new Set(history);
+
+            return (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+                    <div className="bg-white rounded-3xl p-6 w-full max-w-sm modal-enter shadow-2xl relative" onClick={e => e.stopPropagation()}>
+                        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                            <Icons.X />
+                        </button>
+                        
+                        <h2 className="text-xl font-black text-pink-500 text-center mb-4 flex items-center justify-center gap-2">
+                            <Icons.Calendar size={20}/> 入浴スタンプ帳
+                        </h2>
+
+                        <div className="flex justify-between items-center mb-4 px-2">
+                            <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><Icons.ChevronLeft size={20}/></button>
+                            <span className="font-bold text-gray-700">{monthLabel}</span>
+                            <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><Icons.ChevronRight size={20}/></button>
+                        </div>
+
+                        <div className="calendar-grid mb-2 text-center text-xs font-bold text-gray-400">
+                            <div className="text-red-400">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div className="text-blue-400">土</div>
+                        </div>
+
+                        <div className="calendar-grid gap-y-3">
+                            {days.map((date, i) => {
+                                if (!date) return <div key={i}></div>;
+                                const dateStr = date.toISOString().split('T')[0];
+                                const isClean = historySet.has(dateStr);
+                                const isToday = date.toDateString() === new Date().toDateString();
+
+                                return (
+                                    <div key={i} className="flex flex-col items-center justify-start h-10">
+                                        <span className={`text-xs mb-1 ${isToday ? 'bg-pink-500 text-white w-5 h-5 rounded-full flex items-center justify-center' : 'text-gray-600'}`}>
+                                            {date.getDate()}
+                                        </span>
+                                        {isClean && (
+                                            <span className="text-lg leading-none animate-bounce">💮</span>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        
+                        <p className="text-xs text-center text-gray-400 mt-6">
+                            お風呂に入るとスタンプが押されるよ！<br/>毎日埋めて美意識高めよう✨
+                        </p>
+                    </div>
+                </div>
+            );
+        };
 
         const App = () => {
-            // --- State ---
             const [hp, setHp] = useState(100);
             const [lastBathTime, setLastBathTime] = useState(new Date());
             const [eventDamageTotal, setEventDamageTotal] = useState(0);
@@ -116,13 +209,11 @@
             const [currentTime, setCurrentTime] = useState(new Date());
             const [currentMsg, setCurrentMsg] = useState("");
             const [quickAction, setQuickAction] = useState(null);
-            
-            // 自動更新制御用
             const [lastAppliedTimeMsg, setLastAppliedTimeMsg] = useState("");
-            // 最後にユーザーアクション（イベント/入浴）を行った時間
             const [lastActionTime, setLastActionTime] = useState(new Date(0));
+            const [bathHistory, setBathHistory] = useState([]);
+            const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
-            // --- Effects ---
             useEffect(() => {
                 const loadData = () => {
                     try {
@@ -130,11 +221,13 @@
                         const savedLastBath = localStorage.getItem(STORAGE_KEY_LAST_BATH);
                         const savedDamage = localStorage.getItem(STORAGE_KEY_DAMAGE);
                         const savedLogs = localStorage.getItem(STORAGE_KEY_LOGS);
+                        const savedHistory = localStorage.getItem(STORAGE_KEY_HISTORY);
 
                         if (savedHp) setHp(parseFloat(savedHp));
                         if (savedLastBath) setLastBathTime(new Date(savedLastBath));
                         if (savedDamage) setEventDamageTotal(parseFloat(savedDamage));
                         if (savedLogs) setLogs(JSON.parse(savedLogs));
+                        if (savedHistory) setBathHistory(JSON.parse(savedHistory));
                     } catch (e) {
                         console.error("Failed to load data", e);
                     }
@@ -158,7 +251,8 @@
                 localStorage.setItem(STORAGE_KEY_LAST_BATH, lastBathTime.toISOString());
                 localStorage.setItem(STORAGE_KEY_DAMAGE, eventDamageTotal.toString());
                 localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(logs));
-            }, [hp, lastBathTime, eventDamageTotal, logs]);
+                localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(bathHistory));
+            }, [hp, lastBathTime, eventDamageTotal, logs, bathHistory]);
 
             useEffect(() => {
                 const timer = setInterval(() => {
@@ -167,19 +261,15 @@
                 return () => clearInterval(timer);
             }, []);
 
-            // ステータス計算 & メッセージ更新ロジック
             useEffect(() => {
                 const diffMs = new Date() - lastBathTime;
                 const hoursElapsed = (diffMs / (1000 * 60 * 60));
-                
                 const baseDamage = hoursElapsed * BASE_RATE_PER_HOUR;
                 const totalDamage = baseDamage + eventDamageTotal;
-
                 let currentHp = 100 - totalDamage;
                 currentHp = Math.max(0, Math.min(100, currentHp));
                 setHp(currentHp);
 
-                // アクション直後（8秒間）は時間経過によるメッセージ上書きをブロック
                 if (new Date() - lastActionTime < 8000) return;
 
                 const roundedHour = Math.floor(hoursElapsed);
@@ -199,13 +289,12 @@
                 }
             }, [quickAction]);
 
-            // --- Actions ---
             const handleEvent = (eventKey) => {
                 const event = EVENT_DAMAGES[eventKey];
                 setEventDamageTotal(prev => prev + event.damage);
                 addLog(event.msg, event.emoji);
                 setCurrentMsg(event.msg);
-                setLastActionTime(new Date()); // アクション時刻更新
+                setLastActionTime(new Date());
                 if (navigator.vibrate) navigator.vibrate(50);
             };
 
@@ -216,8 +305,52 @@
                 addLog("お風呂入って復活！今日も私が一番カワイイ💖", "🛁");
                 setCurrentMsg("お風呂上がり最高〜✨ 今が一番可愛い！");
                 setLastAppliedTimeMsg("お風呂上がり最高〜✨ 今が一番可愛い！");
-                setLastActionTime(new Date()); // アクション時刻更新
+                setLastActionTime(new Date());
+                
+                const today = new Date().toISOString().split('T')[0];
+                setBathHistory(prev => {
+                    const newHistory = new Set(prev);
+                    newHistory.add(today);
+                    return Array.from(newHistory);
+                });
+
                 if (navigator.vibrate) navigator.vibrate([0, 100, 50, 100]);
+            };
+
+            // シェア機能 (強化版)
+            const handleShare = async () => {
+                const hoursSinceBath = ((new Date() - lastBathTime) / (1000 * 60 * 60)).toFixed(1);
+                const status = getStatusDesign(hp);
+                const shareUrl = window.location.href;
+                const text = `【お風呂チェッカー】\n現在、お風呂に入らず${hoursSinceBath}時間経過…\n清潔度${Math.floor(hp)}% (${status.label})で社会的に死にかけです😇\n\n#お風呂チェッカー\n${shareUrl}`;
+
+                // 1. スマホのネイティブ共有を試す
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'お風呂チェッカー',
+                            text: text,
+                        });
+                        return; // 成功したらここで終了
+                    } catch (err) {
+                        // ユーザーがキャンセルした場合は何もしない
+                        if (err.name === 'AbortError') return;
+                    }
+                }
+
+                // 2. PCなどでネイティブ共有が使えない、またはエラーになった場合
+                // クリップボードへのコピーを試みる
+                try {
+                    await navigator.clipboard.writeText(text);
+                    alert('文章をコピーしました！SNSに貼り付けてね📋\n\n' + text);
+                } catch (err) {
+                    // 3. クリップボードもダメな場合 (一部のブラウザやiframe内)
+                    // 強制的にTwitter投稿画面を開くか、プロンプトを表示
+                    const isYes = confirm('文章のコピーに失敗しました💦\n代わりにTwitter(X)の投稿画面を開きますか？');
+                    if (isYes) {
+                        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+                    }
+                }
             };
 
             const addLog = (text, icon) => {
@@ -256,10 +389,21 @@
             const hoursSinceBath = ((new Date() - lastBathTime) / (1000 * 60 * 60)).toFixed(1);
 
             return (
-                <div className={`min-h-screen w-full flex flex-col items-center py-6 px-4 ${status.bgColor} transition-colors duration-500 font-sans pb-safe`}>
+                <div className={`min-h-screen w-full flex flex-col items-center py-6 px-4 ${status.bgColor} transition-colors duration-500 font-sans pb-safe relative`}>
                     
-                    {/* Header */}
-                    <header className="w-full text-center mb-6">
+                    <div className="absolute top-4 left-4 z-20">
+                        <button onClick={() => setIsCalendarOpen(true)} className="bg-white/80 p-3 rounded-full shadow-md text-pink-500 hover:scale-110 transition-transform">
+                            <Icons.Calendar size={24} />
+                        </button>
+                    </div>
+                    
+                    <div className="absolute top-4 right-4 z-20">
+                        <button onClick={handleShare} className="bg-white/80 p-3 rounded-full shadow-md text-blue-500 hover:scale-110 transition-transform">
+                            <Icons.Share size={24} />
+                        </button>
+                    </div>
+
+                    <header className="w-full text-center mb-6 mt-2">
                         <div className="inline-block bg-white px-6 py-2 rounded-full border-2 border-pink-200 shadow-sm">
                             <h1 className="text-xl font-black text-pink-500 tracking-wider flex items-center gap-2 justify-center">
                                 <Icons.Sparkles size={20} /> お風呂チェッカー <Icons.Sparkles size={20} />
@@ -267,7 +411,6 @@
                         </div>
                     </header>
 
-                    {/* Main Card */}
                     <div className="w-full max-w-sm glass-card rounded-3xl p-6 mb-6 text-center relative overflow-hidden transition-all duration-300">
                         <div className="absolute top-4 right-4 rotate-12 bg-white px-3 py-1 rounded-lg border-2 border-gray-800 font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] z-10">
                             {status.label}
@@ -292,13 +435,11 @@
                         </div>
                     </div>
 
-                    {/* Timestamp */}
                     <div className="bg-white/60 px-5 py-2 rounded-full mb-6 text-sm font-bold text-gray-600 border border-white flex items-center gap-2">
                         <Icons.Clock size={16} className="text-pink-400" /> 
                         お風呂から <span className="text-xl text-pink-500 font-black">{hoursSinceBath}</span> 時間経過
                     </div>
 
-                    {/* Buttons Grid */}
                     <div className="w-full max-w-sm mb-6">
                         <div className="text-xs font-bold text-gray-400 mb-2 pl-2">▼ 何かあった？ (タップで追加)</div>
                         <div className="grid grid-cols-2 gap-3">
@@ -311,13 +452,11 @@
                         </div>
                     </div>
 
-                    {/* Reset Button */}
                     <button onClick={handleBath} className="w-full max-w-sm bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500 text-white font-black py-4 rounded-full shadow-lg border-4 border-white active:scale-95 transition-all mb-8 flex items-center justify-center gap-2 text-lg">
                         <Icons.Bath size={24} />
                         <span>お風呂入ってリセット✨</span>
                     </button>
 
-                    {/* Logs */}
                     <div className="w-full max-w-sm bg-white/50 rounded-2xl p-4 h-48 overflow-y-auto border border-white scrollbar-hide">
                         <h3 className="text-xs font-bold text-gray-400 mb-3 pl-1 sticky top-0 bg-transparent">HISTORY</h3>
                         <div className="space-y-3">
@@ -333,6 +472,12 @@
                             {logs.length === 0 && <p className="text-xs text-gray-400 text-center py-4">まだ履歴はないよ！</p>}
                         </div>
                     </div>
+
+                    <CalendarModal 
+                        isOpen={isCalendarOpen} 
+                        onClose={() => setIsCalendarOpen(false)} 
+                        history={bathHistory}
+                    />
                 </div>
             );
         };
