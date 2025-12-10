@@ -23,9 +23,6 @@
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- html2canvas -->
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Yomogi&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
@@ -100,111 +97,9 @@
             transition: left 0.5s ease-out;
         }
 
-        /* --- 撮影専用スタイル (シンプル文字のみ版・レイアウト修正Ver5.7) --- */
-        #capture-target {
-            position: fixed;
-            top: -9999px; left: -9999px;
-            width: 375px;
-            min-height: 500px;
-            background: linear-gradient(135deg, #fff0f5 0%, #ffe4e6 100%);
-            background-image: 
-                radial-gradient(#fbcfe8 15%, transparent 16%),
-                radial-gradient(#fbcfe8 15%, transparent 16%);
-            background-size: 20px 20px;
-            background-position: 0 0, 10px 10px;
-            
-            border: 12px solid #fff;
-            padding: 40px 30px;
-            text-align: center;
-            box-sizing: border-box;
-            font-family: 'Mochiy Pop One', sans-serif;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: -1;
-        }
-        
-        .cap-title-box {
-            margin-bottom: 30px; /* マージン調整 */
-            background: rgba(255,255,255,0.98);
-            padding: 14px 32px; /* パディング微調整 */
-            border-radius: 9999px;
-            border: 3px solid #f9a8d4;
-            display: inline-block;
-            box-shadow: 0 6px 14px rgba(236, 72, 153, 0.25); /* 影を少し強く */
-        }
-        .cap-title { 
-            color: #ec4899; 
-            font-size: 26px; 
-            margin: 0;
-            letter-spacing: 0.08em; /* 文字間を少し広げてバランスを取る */
-            line-height: 1;
-            white-space: nowrap;
-        }
-        
-        .cap-main { 
-            width: 100%; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center;
-            margin-bottom: 30px; /* マージン調整 */
-        }
-        
-        .cap-label-small {
-            font-size: 18px;
-            color: #db2777;
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-        
-        .cap-time-huge {
-            font-size: 80px;
-            line-height: 1;
-            font-weight: 900;
-            color: #be185d;
-            text-shadow: 4px 4px 0 #fff, 0 0 20px rgba(236, 72, 153, 0.2);
-            font-family: 'Zen Maru Gothic', sans-serif;
-            margin: 10px 0;
-        }
-        
-        .cap-unit {
-            font-size: 24px;
-            color: #db2777;
-            margin-left: 5px;
-        }
-        
-        .cap-footer { 
-            margin-top: auto; 
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            color: #db2777; 
-            font-size: 12px; 
-            font-weight: bold; 
-            opacity: 0.6; 
-            border-top: 2px dashed #fbcfe8;
-            padding-top: 15px;
-        }
-
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         
-        .loading-overlay {
-            position: fixed; inset: 0;
-            background: rgba(255, 255, 255, 0.9);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            z-index: 100; backdrop-filter: blur(5px);
-        }
-        .spinner {
-            width: 40px; height: 40px;
-            border: 4px solid #fbcfe8; border-top: 4px solid #ec4899;
-            border-radius: 50%; animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
         /* カレンダーUI修正 */
         .calendar-grid {
             display: grid;
@@ -235,7 +130,7 @@
         );
 
         const Icons = {
-            Sparkles: (props) => <Icon {...props} path={<><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M5 19v2"/><path d="M9 19H5"/></>} />,
+            Sparkles: (props) => <Icon {...props} path={<><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 5H5"/><path d="M5 19v2"/><path d="M9 19H5"/></>} />,
             Bath: (props) => <Icon {...props} path={<><path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-1-1.5C3.81 2 2.5 3.31 2.5 5.5c0 1.56 1.15 2.1 1.8 2.2"/><path d="M21 10c0-1.66-1.34-3-3-3-1.12 0-2.1.58-2.6 1.5L14 10"/><path d="M7 10h14L19.5 21h-11Z"/><path d="M7 10v4"/></>} />,
             Clock: (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} />,
             Share: (props) => <Icon {...props} path={<><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></>} />,
@@ -376,7 +271,7 @@
                         <div className="calendar-grid mb-2 text-center text-xs font-bold text-gray-400">
                             <div className="text-red-400">日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div className="text-blue-400">土</div>
                         </div>
-                        <div className="calendar-grid">
+                        <div className="calendar-grid gap-y-3">
                             {days.map((date, i) => {
                                 if (!date) return <div key={i}></div>;
                                 const dateStr = date.toISOString().split('T')[0];
@@ -412,9 +307,7 @@
             const [isCalendarOpen, setIsCalendarOpen] = useState(false);
             const [showInAppWarning, setShowInAppWarning] = useState(false);
             const [showInstallGuide, setShowInstallGuide] = useState(false);
-            const [isGeneratingImage, setIsGeneratingImage] = useState(false);
             const [userId, setUserId] = useState("");
-            const cardRef = useRef(null);
             
             useEffect(() => {
                 const loadData = () => {
@@ -545,64 +438,34 @@
                 };
             };
 
+            // テキストのみのシェア機能（デコテキスト生成）
             const handleShare = async () => {
                 const hoursSinceBath = ((new Date() - lastBathTime) / (1000 * 60 * 60)).toFixed(1);
                 const status = getStatusDesign(hp);
                 let shareUrl = window.location.href.split('?')[0]; 
-                const text = `【お風呂チェッカー】\n現在、お風呂に入らず${hoursSinceBath}時間経過…\n盛れ度${Math.floor(hp)}% (${status.label})\n\n「${status.shareMsg}」\n\n#お風呂チェッカー\n${shareUrl}`;
+                
+                // デコテキストの作成
+                const text = `
+🫧 お風呂チェッカー 🫧
+
+経過時間：${hoursSinceBath}時間
+清潔度　：${Math.floor(hp)}% (${status.label})
+
+「${status.shareMsg}」
+
+#お風呂チェッカー
+${shareUrl}`;
+
                 if (navigator.share) {
-                    try { await navigator.share({ title: 'お風呂チェッカー', text: text }); return; } 
+                    try { await navigator.share({ title: 'お風呂チェッカー', text: text.trim() }); return; } 
                     catch (err) { if (err.name === 'AbortError') return; }
                 }
                 try {
-                    await navigator.clipboard.writeText(text);
-                    alert('文章をコピーしました！SNSに貼り付けてね📋\n\n' + text);
+                    await navigator.clipboard.writeText(text.trim());
+                    alert('文章をコピーしました！SNSに貼り付けてね📋\n\n' + text.trim());
                 } catch (err) {
                     const isYes = confirm('文章のコピーに失敗しました💦\n代わりにTwitter(X)の投稿画面を開きますか？');
-                    if (isYes) { window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank'); }
-                }
-            };
-
-            const handleImageShare = async () => {
-                const target = document.getElementById('capture-target');
-                if (!target) return;
-                setIsGeneratingImage(true);
-                try {
-                    await new Promise(resolve => setTimeout(resolve, 800)); // 安定待ち時間を少し延長
-                    const canvas = await html2canvas(target, {
-                        scale: 2, 
-                        useCORS: true,
-                        backgroundColor: null,
-                        logging: false, 
-                    });
-                    canvas.toBlob(async (blob) => {
-                        if (!blob) {
-                            alert('ごめんね、画像の作成に失敗しちゃった💦');
-                            setIsGeneratingImage(false);
-                            return;
-                        }
-                        const file = new File([blob], "ofuro-check.png", { type: "image/png" });
-                        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                            try {
-                                await navigator.share({
-                                    files: [file],
-                                    title: 'お風呂チェッカー',
-                                    text: '今の清潔度はこれ…😇 #お風呂チェッカー'
-                                });
-                            } catch (err) { console.log('Share canceled'); }
-                        } else {
-                            const link = document.createElement('a');
-                            link.download = 'ofuro-check.png';
-                            link.href = canvas.toDataURL();
-                            link.click();
-                            alert('画像を保存しました！\nInstagramのストーリーでシェアしてね📸');
-                        }
-                        setIsGeneratingImage(false);
-                    }, 'image/png');
-                } catch (err) {
-                    console.error(err);
-                    alert('エラーが発生しました💦\n' + err.message);
-                    setIsGeneratingImage(false);
+                    if (isYes) { window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text.trim())}`, '_blank'); }
                 }
             };
 
@@ -617,76 +480,42 @@
 
             const status = getStatusDesign(hp);
             const hoursSinceBath = ((new Date() - lastBathTime) / (1000 * 60 * 60)).toFixed(1);
-            const currentDateStr = new Date().toLocaleDateString('ja-JP');
 
             return (
                 <div className={`min-h-screen w-full flex flex-col items-center py-6 px-4 transition-colors duration-500 font-sans pb-safe relative`}>
                     
                     <FloatingBackground />
 
-                    {/* 撮影専用の隠しDOM (超シンプル版) */}
-                    <div id="capture-target">
-                        <div className="cap-title-box">
-                            <h1 className="cap-title">お風呂チェッカー</h1>
-                        </div>
-                        <div className="cap-main">
-                            <div className="cap-label-small">お風呂に入らず</div>
-                            <div className="cap-time-huge">{hoursSinceBath}<span className="cap-unit">時間</span></div>
-                            <div className="cap-label-small">経過...</div>
-                        </div>
-                        <div className="cap-footer">
-                            <span>{currentDateStr}</span>
-                            <span>ID: {userId}</span>
-                        </div>
-                    </div>
-
-                    {isGeneratingImage && (
-                        <div className="loading-overlay">
-                            <div className="spinner mb-4"></div>
-                            <p className="font-bold text-pink-500 font-pop">画像を作ってるよ...🎨</p>
-                        </div>
-                    )}
-
                     {showInAppWarning && <InAppBrowserWarning onClose={() => setShowInAppWarning(false)} />}
                     {showInstallGuide && <InstallGuide onClose={() => setShowInstallGuide(false)} />}
 
-                    {/* Header */}
+                    {/* Header (タイトル修正) */}
                     <div className="w-full flex justify-between items-center pt-safe mb-6 mt-2 relative z-20 px-2">
                         <button onClick={() => setIsCalendarOpen(true)} className="bg-white/80 p-3 rounded-full shadow-md text-pink-500 hover:scale-110 transition-transform shrink-0">
                             <Icons.Calendar size={24} />
                         </button>
 
-                        <div className="inline-block bg-white/90 px-4 py-1.5 rounded-full border-2 border-pink-200 shadow-sm mx-1 flex-1 min-w-0 flex justify-center">
-                            <h1 className="text-lg font-black text-pink-500 tracking-normal flex items-center justify-center whitespace-nowrap overflow-hidden font-pop">
+                        <div className="inline-block bg-white/90 px-3 py-1.5 rounded-full border-2 border-pink-200 shadow-sm mx-1 flex-1 min-w-0 flex justify-center">
+                            <h1 className="text-sm sm:text-base font-black text-pink-500 tracking-normal flex items-center justify-center whitespace-nowrap overflow-hidden font-pop">
                                 お風呂チェッカー
                             </h1>
                         </div>
 
-                        <div className="flex gap-2 shrink-0">
-                            <button onClick={handleImageShare} className="bg-white/80 p-3 rounded-full shadow-md text-pink-500 hover:scale-110 transition-transform">
-                                <Icons.Camera size={24} />
-                            </button>
-                            <button onClick={handleShare} className="bg-white/80 p-3 rounded-full shadow-md text-blue-500 hover:scale-110 transition-transform">
-                                <Icons.Share size={24} />
-                            </button>
-                        </div>
+                        <button onClick={handleShare} className="bg-white/80 p-3 rounded-full shadow-md text-blue-500 hover:scale-110 transition-transform shrink-0">
+                            <Icons.Share size={24} />
+                        </button>
                     </div>
 
                     {/* Main Card */}
-                    <div ref={cardRef} className="w-full max-w-sm glass-card rounded-3xl p-6 mb-6 text-center relative overflow-visible transition-all duration-300">
-                        {/* デコレーションパーツ（右上） */}
+                    <div className="w-full max-w-sm glass-card rounded-3xl p-6 mb-6 text-center relative overflow-visible transition-all duration-300">
                         <div className="absolute -top-6 -right-6 text-6xl animate-bounce z-20 filter drop-shadow-lg">{status.deco}</div>
                         
-                        {/* ステータスラベル（左上） */}
                         <div className="absolute top-0 left-0 bg-pink-500 text-white text-xs font-bold px-3 py-1 rounded-br-2xl rounded-tl-2xl shadow-sm z-10 font-pop">
                             {status.label}
                         </div>
 
-                        {/* キャラクター画像表示エリア（絵文字版） */}
                         <div className="w-48 h-48 mx-auto mt-6 mb-6 relative purupuru select-none flex items-center justify-center">
-                            {/* グロー効果 */}
                             <div className={`absolute inset-0 rounded-full opacity-50 blur-xl ${status.glowColor}`}></div>
-                            {/* 絵文字 */}
                             <div className="relative z-10 text-9xl">{status.avatar}</div>
                         </div>
                         
@@ -698,7 +527,6 @@
                                 <span className="text-2xl font-black text-pink-500 drop-shadow-sm">{Math.floor(hp)}%</span>
                             </div>
                             
-                            {/* ハートスライダーメーター */}
                             <div className="h-6 w-full rounded-full meter-track relative mt-2">
                                 <div style={{ width: `${hp}%` }} className="h-full rounded-full meter-fill relative"></div>
                                 <div style={{ left: `calc(${hp}% - 12px)` }} className="absolute top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center meter-icon">
