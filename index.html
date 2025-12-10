@@ -24,6 +24,9 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- html-to-image (軽量・高画質な画像生成ライブラリ) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Yomogi&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
 
@@ -100,7 +103,7 @@
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* カレンダーUI修正 */
+        /* カレンダーUI */
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -114,6 +117,13 @@
             align-items: center;
             justify-content: center;
             font-size: 12px;
+        }
+
+        /* モーダルアニメーション */
+        .modal-enter { animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes modalPop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
@@ -161,17 +171,18 @@
             { hour: 30, msg: "菌の温床になってるよ🦠 今すぐお風呂行って！" }
         ];
 
+        // ダメージ値をマイルドに調整
         const EVENT_DAMAGES = {
-            sleep: { label: "寝て起きた", damage: 15, emoji: "🛌", msg: "起きたら髪ボサボサ〜💦 寝汗かいた！" },
-            train: { label: "満員電車", damage: 15, emoji: "🚃", msg: "密着やばすぎ…蒸れてる気がする💧" },
-            outing: { label: "ちょっと外出", damage: 10, emoji: "👜", msg: "外の空気汚すぎ…ホコリついたかも🤧" },
-            rain: { label: "雨・湿気", damage: 10, emoji: "☔", msg: "湿気で髪終わった…うねりMAX😭" },
-            exercise: { label: "体育・運動", damage: 40, emoji: "🏃‍♀️", msg: "汗やばい！これは即シャワー案件🚿" },
-            live: { label: "ライブ・推し活", damage: 35, emoji: "🎤", msg: "汗だくで完全燃焼🔥 楽しかったけど体ベタベタ！" },
-            food: { label: "焼肉/揚げ物", damage: 20, emoji: "🥩", msg: "匂いついちゃった…ファブリーズじゃ無理😭" },
-            ramen: { label: "ラーメン", damage: 20, emoji: "🍜", msg: "ニンニク背脂…美味しいけど髪に匂いが😱" },
-            allnight: { label: "徹夜・オール", damage: 25, emoji: "🌙", msg: "肌荒れ確定演出。化粧ノリ最悪になりそう💀" },
-            mask: { label: "ずっとマスク", damage: 5, emoji: "😷", msg: "口周りが蒸れてる…肌荒れ注意報🚨" }
+            sleep: { label: "寝て起きた", damage: 10, emoji: "🛌", msg: "起きたら髪ボサボサ〜💦 寝汗かいた！" },
+            train: { label: "満員電車", damage: 12, emoji: "🚃", msg: "密着やばすぎ…蒸れてる気がする💧" },
+            outing: { label: "ちょっと外出", damage: 8, emoji: "👜", msg: "外の空気汚すぎ…ホコリついたかも🤧" },
+            rain: { label: "雨・湿気", damage: 8, emoji: "☔", msg: "湿気で髪終わった…うねりMAX😭" },
+            exercise: { label: "体育・運動", damage: 20, emoji: "🏃‍♀️", msg: "汗やばい！これは即シャワー案件🚿" },
+            live: { label: "ライブ・推し活", damage: 25, emoji: "🎤", msg: "汗だくで完全燃焼🔥 楽しかったけど体ベタベタ！" },
+            food: { label: "焼肉/揚げ物", damage: 15, emoji: "🥩", msg: "匂いついちゃった…ファブリーズじゃ無理😭" },
+            ramen: { label: "ラーメン", damage: 15, emoji: "🍜", msg: "ニンニク背脂…美味しいけど髪に匂いが😱" },
+            allnight: { label: "徹夜・オール", damage: 20, emoji: "🌙", msg: "肌荒れ確定演出。化粧ノリ最悪になりそう💀" },
+            mask: { label: "ずっとマスク", damage: 3, emoji: "😷", msg: "口周りが蒸れてる…肌荒れ注意報🚨" }
         };
 
         const STORAGE_KEY_HP = 'hq_hp';
@@ -309,6 +320,10 @@
             const [showInstallGuide, setShowInstallGuide] = useState(false);
             const [userId, setUserId] = useState("");
             
+            // 画像生成用ステート
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [generatedImage, setGeneratedImage] = useState(null);
+
             useEffect(() => {
                 const loadData = () => {
                     try {
@@ -387,6 +402,7 @@
 
             const handleEvent = (eventKey) => {
                 const event = EVENT_DAMAGES[eventKey];
+                // キャップ撤廃：単純加算
                 setEventDamageTotal(prev => prev + event.damage);
                 addLog(event.msg, event.emoji);
                 setCurrentMsg(event.msg);
@@ -438,13 +454,11 @@
                 };
             };
 
-            // テキストのみのシェア機能（デコテキスト生成）
             const handleShare = async () => {
                 const hoursSinceBath = ((new Date() - lastBathTime) / (1000 * 60 * 60)).toFixed(1);
                 const status = getStatusDesign(hp);
                 let shareUrl = window.location.href.split('?')[0]; 
                 
-                // デコテキストの作成
                 const text = `
 🫧 お風呂チェッカー 🫧
 
@@ -469,6 +483,41 @@ ${shareUrl}`;
                 }
             };
 
+            // 画像生成関数（html-to-imageを使用）
+            const generateShareImage = async () => {
+                setIsGenerating(true);
+                const node = document.getElementById('share-target');
+
+                try {
+                    await new Promise(resolve => setTimeout(resolve, 100)); // フォント読み込み待ち
+
+                    const dataUrl = await htmlToImage.toPng(node, {
+                        quality: 1.0,
+                        pixelRatio: 3, // 高画質設定
+                        style: { transform: 'scale(1)' }
+                    });
+
+                    setGeneratedImage(dataUrl);
+
+                    if (navigator.canShare && navigator.canShare({ files: [new File([], 'test.png')] })) {
+                        const blob = await (await fetch(dataUrl)).blob();
+                        const file = new File([blob], "ofuro-checker.png", { type: "image/png" });
+                        try {
+                            await navigator.share({
+                                title: 'お風呂チェッカー',
+                                text: `清潔度${Math.floor(hp)}%！ ${getStatusDesign(hp).shareMsg} #お風呂チェッカー`,
+                                files: [file],
+                            });
+                        } catch (err) {}
+                    }
+                } catch (error) {
+                    console.error('oops, something went wrong!', error);
+                    alert('画像の生成に失敗しました💦');
+                } finally {
+                    setIsGenerating(false);
+                }
+            };
+
             const addLog = (text, icon) => {
                 const now = new Date();
                 const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
@@ -488,8 +537,66 @@ ${shareUrl}`;
 
                     {showInAppWarning && <InAppBrowserWarning onClose={() => setShowInAppWarning(false)} />}
                     {showInstallGuide && <InstallGuide onClose={() => setShowInstallGuide(false)} />}
+                    
+                    {/* ▼▼▼ 1. 撮影専用の隠しコンポーネント (Ver 6.2で修正) ▼▼▼ */}
+                    <div style={{ position: 'fixed', top: '-9999px', left: '-9999px' }}>
+                        <div id="share-target" className="w-[375px] h-[600px] bg-[#fdf2f8] p-8 flex flex-col items-center justify-center relative overflow-hidden text-center border-4 border-white">
+                            <div className="absolute inset-0 opacity-20" style={{
+                                backgroundImage: 'radial-gradient(#fbcfe8 20%, transparent 20%)',
+                                backgroundSize: '20px 20px'
+                            }}></div>
+                            
+                            <div className="bg-white/90 px-4 py-2 rounded-full border-2 border-pink-200 shadow-sm mb-4 z-10">
+                                <h1 className="text-xl font-black text-pink-500 font-pop">お風呂チェッカー</h1>
+                            </div>
 
-                    {/* Header (タイトル修正) */}
+                            <div className="mb-4 relative z-10 scale-110">
+                                <div className="text-8xl filter drop-shadow-xl">{status.avatar}</div>
+                                <div className="absolute -top-4 -right-4 text-5xl">{status.deco}</div>
+                            </div>
+                            
+                            {/* ★ここに追加：時間表示★ */}
+                            <div className="bg-white/60 p-4 rounded-xl border border-pink-100 mb-4 w-full z-10">
+                                <div className="text-xs font-bold text-pink-400 mb-1">お風呂に入らず...</div>
+                                <div className="text-5xl font-black text-pink-600 font-pop leading-none">
+                                    {hoursSinceBath}<span className="text-lg ml-1">時間</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-white/80 rounded-2xl p-4 border-2 border-pink-100 shadow-md w-full z-10">
+                                <div className="flex justify-between items-end mb-2 border-b border-pink-100 pb-2">
+                                    <span className="font-bold text-gray-500 text-sm">現在の清潔度</span>
+                                    <span className="font-black text-4xl text-pink-500 font-pop">{Math.floor(hp)}%</span>
+                                </div>
+                                <div className="text-left">
+                                     <span className={`text-xs font-bold text-white px-2 py-1 rounded ${status.glowColor.replace('bg-', 'bg-')}`}>
+                                        状態：{status.label}
+                                    </span>
+                                </div>
+                                <p className="mt-3 text-sm font-bold text-gray-700 font-hand leading-relaxed">
+                                    「{status.shareMsg}」
+                                </p>
+                            </div>
+
+                            <div className="mt-8 text-gray-400 text-xs font-bold font-pop flex items-center gap-2 opacity-70">
+                                <span>🛁 お風呂入って盛れ度UP！</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* ▼▼▼ 2. 生成画像モーダル ▼▼▼ */}
+                    {generatedImage && (
+                        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6" onClick={() => setGeneratedImage(null)}>
+                            <div className="bg-white rounded-3xl p-4 w-full max-w-sm relative" onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setGeneratedImage(null)} className="absolute -top-3 -right-3 bg-gray-500 text-white p-2 rounded-full"><Icons.X size={16}/></button>
+                                <h3 className="text-center font-bold text-gray-700 mb-2 font-pop">画像を長押しして保存してね！</h3>
+                                <img src={generatedImage} alt="Share" className="w-full rounded-xl border border-gray-200 shadow-inner" />
+                                <p className="text-center text-xs text-gray-400 mt-2">TwitterやInstagramでシェア✨</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Header */}
                     <div className="w-full flex justify-between items-center pt-safe mb-6 mt-2 relative z-20 px-2">
                         <button onClick={() => setIsCalendarOpen(true)} className="bg-white/80 p-3 rounded-full shadow-md text-pink-500 hover:scale-110 transition-transform shrink-0">
                             <Icons.Calendar size={24} />
@@ -501,9 +608,17 @@ ${shareUrl}`;
                             </h1>
                         </div>
 
-                        <button onClick={handleShare} className="bg-white/80 p-3 rounded-full shadow-md text-blue-500 hover:scale-110 transition-transform shrink-0">
-                            <Icons.Share size={24} />
-                        </button>
+                        {/* シェアボタン群 */}
+                        <div className="flex gap-2 shrink-0">
+                            {/* カメラボタン */}
+                            <button onClick={generateShareImage} disabled={isGenerating} className="bg-white/80 p-3 rounded-full shadow-md text-pink-500 hover:scale-110 transition-transform shrink-0 disabled:opacity-50">
+                                {isGenerating ? <div className="animate-spin w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full"></div> : <Icons.Camera size={24} />}
+                            </button>
+                            {/* テキストボタン */}
+                            <button onClick={handleShare} className="bg-white/80 p-3 rounded-full shadow-md text-blue-500 hover:scale-110 transition-transform shrink-0">
+                                <Icons.Share size={24} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Main Card */}
